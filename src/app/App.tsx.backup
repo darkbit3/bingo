@@ -1,0 +1,749 @@
+import { useState, useEffect } from 'react';
+import { Moon, Sun, Volume2, VolumeX, RefreshCw, ChevronLeft, ChevronRight, History } from 'lucide-react';
+
+type GamePhase = 'selection' | 'playing' | 'winner';
+
+export default function App() {
+  const [darkMode, setDarkMode] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
+  const [amount, setAmount] = useState(10);
+  const [room, setRoom] = useState(1);
+  const [balance, setBalance] = useState(1000);
+  const [playerId] = useState('P' + Math.floor(Math.random() * 100000));
+  const [boardRange, setBoardRange] = useState<'1-100' | '101-200' | '201-300' | '301-400'>('1-100');
+  const [gamePhase, setGamePhase] = useState<GamePhase>('selection');
+  const [showBetPopup, setShowBetPopup] = useState(false);
+  const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const [betNumbers, setBetNumbers] = useState<number[]>([]);
+  const [countdown, setCountdown] = useState(60);
+  const [gameCountdown, setGameCountdown] = useState(3);
+  const [calledNumbers, setCalledNumbers] = useState<number[]>([]);
+  const [currentCall, setCurrentCall] = useState<number | null>(null);
+  const [gameId] = useState('G' + Math.floor(Math.random() * 10000));
+  const [players] = useState(Math.floor(Math.random() * 50) + 10);
+  const [payout] = useState(amount * players * 0.8);
+  const [boardType, setBoardType] = useState<1 | 2>(1);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyTab, setHistoryTab] = useState<'game' | 'history' | 'userhistory'>('game');
+  const [showWinPopup, setShowWinPopup] = useState(false);
+  const [winCountdown, setWinCountdown] = useState(3);
+  const [playerBoards, setPlayerBoards] = useState<number[][][]>([]);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  useEffect(() => {
+    if (gamePhase === 'selection' && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (gamePhase === 'selection' && countdown === 0) {
+      setGamePhase('playing');
+      setGameCountdown(3);
+    }
+  }, [countdown, gamePhase]);
+
+  const generateBingoBoard = () => {
+    const board: number[][] = [];
+    const ranges = {
+      '1-100': [1, 100],
+      '101-200': [101, 200],
+      '201-300': [201, 300],
+      '301-400': [301, 400]
+    };
+    const [min, max] = ranges[boardRange];
+    
+    ['B', 'I', 'N', 'G', 'O'].forEach(() => {
+      const column: number[] = [];
+      const available = Array.from({ length: max - min + 1 }, (_, i) => i + min);
+      for (let i = 0; i < 5; i++) {
+        const randomIndex = Math.floor(Math.random() * available.length);
+        column.push(available[randomIndex]);
+        available.splice(randomIndex, 1);
+      }
+      board.push(column);
+    });
+
+    board[2][2] = -1;
+    return board;
+  };
+
+  const handleNumberSelect = (num: number) => {
+    setSelectedNumber(num);
+    setShowBetPopup(true);
+    const boards = Array.from({ length: boardType }, () => generateBingoBoard());
+    setPlayerBoards(boards);
+  };
+
+  const handleBingo = (boardIndex: number) => {
+    setShowWinPopup(true);
+    setWinCountdown(3);
+    setGamePhase('winner');
+  };
+
+  const handleReset = () => {
+    setGamePhase('selection');
+    setCountdown(60);
+    setCalledNumbers([]);
+    setCurrentCall(null);
+    setBetNumbers([]);
+    setSelectedNumber(null);
+    setShowBetPopup(false);
+    setShowWinPopup(false);
+    setWinCountdown(3);
+    setPlayerBoards([]);
+  };
+
+  const isNumberCalled = (num: number) => {
+    return calledNumbers.includes(num);
+  };
+
+  const getBoardNumbers = () => {
+    const ranges = {
+      '1-100': [1, 100],
+      '101-200': [101, 200],
+      '201-300': [201, 300],
+      '301-400': [301, 400]
+    };
+    const [min, max] = ranges[boardRange];
+    return Array.from({ length: max - min + 1 }, (_, i) => i + min);
+  };
+
+  return (
+    <>
+      <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
+        <div className="w-full flex flex-col h-full">
+          {/* Header - All Horizontal */}
+          <div className="bg-gradient-to-r from-card to-muted border-b-2 border-primary/20 px-3 py-2 lg:px-6 lg:py-3 shadow-md">
+            <div className="flex items-center gap-2 lg:gap-4">
+              <select
+                value={amount}
+                onChange={(e) => setAmount(Number(e.target.value))}
+                className="bg-card text-foreground border-2 border-primary/30 rounded-lg px-2 py-1 lg:px-4 lg:py-2 text-sm lg:text-base font-medium hover:border-primary transition-colors"
+              >
+                {[10, 20, 30, 50, 100, 200].map(amt => (
+                  <option key={amt} value={amt}>${amt}</option>
+                ))}
+              </select>
+              <select
+                value={room}
+                onChange={(e) => setRoom(Number(e.target.value))}
+                className="bg-card text-foreground border-2 border-primary/30 rounded-lg px-2 py-1 lg:px-4 lg:py-2 text-sm lg:text-base font-medium hover:border-primary transition-colors"
+              >
+                {[1, 2, 3, 4, 5].map(r => (
+                  <option key={r} value={r}>Room {r}</option>
+                ))}
+              </select>
+              <select
+                value={boardType}
+                onChange={(e) => setBoardType(Number(e.target.value) as 1 | 2)}
+                className="bg-card text-foreground border-2 border-primary/30 rounded-lg px-2 py-1 lg:px-4 lg:py-2 text-sm lg:text-base font-medium hover:border-primary transition-colors"
+              >
+                <option value={1}>1 Board</option>
+                <option value={2}>2 Boards</option>
+              </select>
+              <div className="flex-1"></div>
+              <div className="text-sm lg:text-base flex items-center gap-1">
+                <span className="opacity-60">Balance:</span>
+                <span className="font-bold text-success">${balance}</span>
+              </div>
+              <div className="text-sm lg:text-base flex items-center gap-1">
+                <span className="opacity-60">ID:</span>
+                <span className="font-bold text-primary">{playerId}</span>
+              </div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="flex-1 pb-24 lg:pb-20 pt-32 overflow-hidden flex flex-col">
+            {gamePhase === 'selection' && !showBetPopup && (
+              <>
+                {/* Mini Header - Horizontal */}
+                <div className="bg-gradient-to-r from-card to-muted border-b border-border px-3 py-2 lg:px-6 lg:py-3 shadow-sm">
+                  <div className="flex items-center justify-between gap-2 lg:gap-4">
+                    <div className="text-sm lg:text-base flex items-center gap-1">
+                      <span className="opacity-60">Players:</span>
+                      <span className="font-bold text-primary">{players}</span>
+                    </div>
+                    <div className="text-sm lg:text-base flex items-center gap-1">
+                      <span className="opacity-60">Payout:</span>
+                      <span className="font-bold text-success">${payout.toFixed(0)}</span>
+                    </div>
+                    <div className="text-sm lg:text-base flex items-center gap-1">
+                      <span className="opacity-60">Game ID:</span>
+                      <span className="font-bold">{gameId}</span>
+                    </div>
+                    <div className="text-sm lg:text-base flex items-center gap-1">
+                      <span className="opacity-60">Time:</span>
+                      <span className="font-bold text-destructive">{countdown}s</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Board Selection - Inline between header and navigation */}
+                <div className="bg-gradient-to-t from-card to-muted p-1 sm:p-2 lg:p-3 shadow-xl">
+                  <div className="w-full">
+                    <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-16 xl:grid-cols-20 gap-0.5 sm:gap-1 lg:gap-2 max-h-20 sm:max-h-24 md:max-h-28 lg:max-h-32 xl:max-h-36 overflow-auto">
+                      {getBoardNumbers().map(num => (
+                        <button
+                          key={num}
+                          onClick={() => handleNumberSelect(num)}
+                          className={`aspect-square rounded-md sm:rounded-lg flex items-center justify-center text-xs sm:text-xs md:text-sm lg:text-sm font-bold transition-all hover:scale-110 shadow-md ${
+                            betNumbers.includes(num)
+                              ? 'bg-gradient-to-br from-success to-green-700 text-success-foreground shadow-xl ring-2 ring-green-300 scale-105'
+                              : 'bg-gradient-to-br from-primary to-secondary text-primary-foreground hover:opacity-90'
+                          }`}
+                        >
+                          {num}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Board Navigation - Fixed above bottom controls */}
+      {gamePhase === 'selection' && !showBetPopup && (
+        <div className="fixed bottom-20 left-0 right-0 bg-gradient-to-t from-card to-muted border-t border-primary/20 p-2 lg:p-3 shadow-xl backdrop-blur-sm z-10">
+          <div className="flex items-center justify-center gap-2 lg:gap-4">
+            <button
+              onClick={() => {
+                const ranges: ('1-100' | '101-200' | '201-300' | '301-400')[] = ['1-100', '101-200', '201-300', '301-400'];
+                const currentIndex = ranges.indexOf(boardRange);
+                if (currentIndex > 0) setBoardRange(ranges[currentIndex - 1]);
+              }}
+              className="bg-gradient-to-r from-primary to-secondary text-primary-foreground p-1.5 lg:p-2 rounded-lg disabled:opacity-30 hover:scale-105 transition-transform shadow-md"
+              disabled={boardRange === '1-100'}
+            >
+              <ChevronLeft className="w-3 h-3 lg:w-5 lg:h-5" />
+            </button>
+            <div className="font-bold text-xs lg:text-lg text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary px-1">{boardRange}</div>
+            <button
+              onClick={() => {
+                const ranges: ('1-100' | '101-200' | '201-300' | '301-400')[] = ['1-100', '101-200', '201-300', '301-400'];
+                const currentIndex = ranges.indexOf(boardRange);
+                if (currentIndex < ranges.length - 1) setBoardRange(ranges[currentIndex + 1]);
+              }}
+              className="bg-gradient-to-r from-primary to-secondary text-primary-foreground p-1.5 lg:p-2 rounded-lg disabled:opacity-30 hover:scale-105 transition-transform shadow-md"
+              disabled={boardRange === '301-400'}
+            >
+              <ChevronRight className="w-3 h-3 lg:w-5 lg:h-5" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Controls - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-card to-muted border-t-2 border-primary/20 p-1.5 sm:p-2 lg:p-3 flex justify-between items-center shadow-2xl backdrop-blur-sm z-20">
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="p-1.5 sm:p-2 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-muted to-gray-300 dark:from-muted dark:to-gray-700 hover:scale-110 transition-transform shadow-lg"
+        >
+          {darkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+        </button>
+        <button
+          onClick={handleReset}
+          className="p-1.5 sm:p-2 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground hover:scale-110 transition-transform shadow-lg"
+        >
+          <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+        </button>
+        <button
+          onClick={() => setSoundOn(!soundOn)}
+          className="p-1.5 sm:p-2 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-muted to-gray-300 dark:from-muted dark:to-gray-700 hover:scale-110 transition-transform shadow-lg"
+        >
+          {soundOn ? <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" /> : <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+        </button>
+      </div>
+
+      {/* Bet Popup */}
+      {showBetPopup && selectedNumber && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-card to-muted rounded-2xl p-6 lg:p-8 max-w-sm lg:max-w-md w-full shadow-2xl border-2 border-primary/30">
+            <div className="text-center mb-4">
+              <div className="opacity-60 text-sm lg:text-base">Board Number</div>
+              <div className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{selectedNumber}</div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm lg:text-base opacity-60">Bet Amount:</span>
+                <span className="font-bold text-lg lg:text-xl">${amount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm lg:text-base opacity-60">Your Balance:</span>
+                <span className="font-bold text-lg lg:text-xl">${balance}</span>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => {
+                  if (balance >= amount) {
+                    setBalance(balance - amount);
+                    setBetNumbers([...betNumbers, selectedNumber]);
+                    setShowBetPopup(false);
+                    setSelectedNumber(null);
+                  }
+                }}
+                className="flex-1 bg-gradient-to-r from-primary to-secondary text-primary-foreground py-2 lg:py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
+              >
+                Place Bet
+              </button>
+              <button
+                onClick={() => {
+                  setShowBetPopup(false);
+                  setSelectedNumber(null);
+                }}
+                className="flex-1 bg-gradient-to-r from-muted to-gray-300 dark:from-muted dark:to-gray-700 text-foreground py-2 lg:py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </>
+  );
+}
+
+export default function App() {
+  const [darkMode, setDarkMode] = useState(false);
+  const [soundOn, setSoundOn] = useState(true);
+  const [amount, setAmount] = useState(10);
+  const [room, setRoom] = useState(1);
+  const [balance, setBalance] = useState(1000);
+  const [playerId] = useState('P' + Math.floor(Math.random() * 100000));
+  const [boardRange, setBoardRange] = useState<'1-100' | '101-200' | '201-300' | '301-400'>('1-100');
+  const [gamePhase, setGamePhase] = useState<GamePhase>('selection');
+  const [showBetPopup, setShowBetPopup] = useState(false);
+  const [selectedNumber, setSelectedNumber] = useState<number | null>(null);
+  const [betNumbers, setBetNumbers] = useState<number[]>([]);
+  const [countdown, setCountdown] = useState(60);
+  const [gameCountdown, setGameCountdown] = useState(3);
+  const [calledNumbers, setCalledNumbers] = useState<number[]>([]);
+  const [currentCall, setCurrentCall] = useState<number | null>(null);
+  const [gameId] = useState('G' + Math.floor(Math.random() * 10000));
+  const [players] = useState(Math.floor(Math.random() * 50) + 10);
+  const [payout] = useState(amount * players * 0.8);
+  const [boardType, setBoardType] = useState<1 | 2>(1);
+  const [showHistory, setShowHistory] = useState(false);
+  const [historyTab, setHistoryTab] = useState<'game' | 'history' | 'userhistory'>('game');
+  const [showWinPopup, setShowWinPopup] = useState(false);
+  const [winCountdown, setWinCountdown] = useState(3);
+  const [playerBoards, setPlayerBoards] = useState<number[][][]>([]);
+
+  useEffect(() => {
+    if (darkMode) {
+      document.documentElement.classList.add('dark');
+    } else {
+      document.documentElement.classList.remove('dark');
+    }
+  }, [darkMode]);
+
+  useEffect(() => {
+    if (gamePhase === 'selection' && countdown > 0) {
+      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (gamePhase === 'selection' && countdown === 0) {
+      setGamePhase('playing');
+      setGameCountdown(3);
+    }
+  }, [countdown, gamePhase]);
+
+  useEffect(() => {
+    if (gamePhase === 'playing' && gameCountdown > 0) {
+      const timer = setTimeout(() => setGameCountdown(gameCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (gamePhase === 'playing' && gameCountdown === 0 && calledNumbers.length < 75) {
+      const timer = setInterval(() => {
+        setCalledNumbers(prev => {
+          if (prev.length >= 75) return prev;
+          let newNum;
+          do {
+            newNum = Math.floor(Math.random() * 75) + 1;
+          } while (prev.includes(newNum));
+          setCurrentCall(newNum);
+          return [...prev, newNum];
+        });
+      }, 2000);
+      return () => clearInterval(timer);
+    }
+  }, [gamePhase, gameCountdown, calledNumbers.length]);
+
+  useEffect(() => {
+    if (showWinPopup && winCountdown > 0) {
+      const timer = setTimeout(() => setWinCountdown(winCountdown - 1), 1000);
+      return () => clearTimeout(timer);
+    } else if (showWinPopup && winCountdown === 0) {
+      handleReset();
+    }
+  }, [showWinPopup, winCountdown]);
+
+  const generateBingoBoard = () => {
+    const board: number[][] = [];
+    const ranges = [
+      [1, 15],   // B
+      [16, 30],  // I
+      [31, 45],  // N
+      [46, 60],  // G
+      [61, 75]   // O
+    ];
+
+    ranges.forEach(([min, max]) => {
+      const column: number[] = [];
+      const available = Array.from({ length: max - min + 1 }, (_, i) => i + min);
+      for (let i = 0; i < 5; i++) {
+        const randomIndex = Math.floor(Math.random() * available.length);
+        column.push(available[randomIndex]);
+        available.splice(randomIndex, 1);
+      }
+      board.push(column);
+    });
+
+    board[2][2] = -1;
+    return board;
+  };
+
+  const handleNumberSelect = (num: number) => {
+    setSelectedNumber(num);
+    setShowBetPopup(true);
+    const boards = Array.from({ length: boardType }, () => generateBingoBoard());
+    setPlayerBoards(boards);
+  };
+
+  const handleBet = () => {
+    if (balance >= amount && selectedNumber) {
+      setBalance(balance - amount);
+      setBetNumbers([...betNumbers, selectedNumber]);
+      setShowBetPopup(false);
+      setCountdown(60);
+      setGamePhase('selection');
+    }
+  };
+
+  const handleBingo = (boardIndex: number) => {
+    setShowWinPopup(true);
+    setWinCountdown(3);
+    setGamePhase('winner');
+  };
+
+  const handleReset = () => {
+    setGamePhase('selection');
+    setShowBetPopup(false);
+    setShowWinPopup(false);
+    setCountdown(60);
+    setGameCountdown(3);
+    setCalledNumbers([]);
+    setCurrentCall(null);
+    setSelectedNumber(null);
+    setWinCountdown(3);
+    setBetNumbers([]);
+  };
+
+  const getBoardNumbers = () => {
+    const ranges = {
+      '1-100': [1, 100],
+      '101-200': [101, 200],
+      '201-300': [201, 300],
+      '301-400': [301, 400]
+    };
+    const [start, end] = ranges[boardRange];
+    return Array.from({ length: end - start + 1 }, (_, i) => i + start);
+  };
+
+  const getColumnLetter = (col: number) => ['B', 'I', 'N', 'G', 'O'][col];
+
+  const isNumberCalled = (num: number) => calledNumbers.includes(num);
+
+  const getNumbersByColumn = () => {
+    const columns = [
+      { letter: 'B', range: '1-15', numbers: Array.from({ length: 15 }, (_, i) => i + 1) },
+      { letter: 'I', range: '16-30', numbers: Array.from({ length: 15 }, (_, i) => i + 16) },
+      { letter: 'N', range: '31-45', numbers: Array.from({ length: 15 }, (_, i) => i + 31) },
+      { letter: 'G', range: '46-60', numbers: Array.from({ length: 15 }, (_, i) => i + 46) },
+      { letter: 'O', range: '61-75', numbers: Array.from({ length: 15 }, (_, i) => i + 61) }
+    ];
+    return columns;
+  };
+
+  return (
+    <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
+      <div className="w-full flex flex-col h-full">
+        {/* Header - All Horizontal */}
+        <div className="bg-gradient-to-r from-card to-muted border-b-2 border-primary/20 px-3 py-2 lg:px-6 lg:py-3 shadow-md">
+          <div className="flex items-center gap-2 lg:gap-4">
+            <select
+              value={amount}
+              onChange={(e) => setAmount(Number(e.target.value))}
+              className="bg-card text-foreground border-2 border-primary/30 rounded-lg px-2 py-1 lg:px-4 lg:py-2 text-sm lg:text-base font-medium hover:border-primary transition-colors"
+            >
+              {[10, 20, 30, 50, 100, 200].map(amt => (
+                <option key={amt} value={amt}>${amt}</option>
+              ))}
+            </select>
+            <select
+              value={room}
+              onChange={(e) => setRoom(Number(e.target.value))}
+              className="bg-card text-foreground border-2 border-primary/30 rounded-lg px-2 py-1 lg:px-4 lg:py-2 text-sm lg:text-base font-medium hover:border-primary transition-colors"
+            >
+              {[1, 2, 3, 4, 5].map(r => (
+                <option key={r} value={r}>Room {r}</option>
+              ))}
+            </select>
+            <select
+              value={boardType}
+              onChange={(e) => setBoardType(Number(e.target.value) as 1 | 2)}
+              className="bg-card text-foreground border-2 border-primary/30 rounded-lg px-2 py-1 lg:px-4 lg:py-2 text-sm lg:text-base font-medium hover:border-primary transition-colors"
+            >
+              <option value={1}>1 Board</option>
+              <option value={2}>2 Boards</option>
+            </select>
+            <div className="flex-1 flex justify-end gap-3 lg:gap-6">
+              <div className="text-sm lg:text-base flex items-center gap-1">
+                <span className="opacity-60">Balance:</span>
+                <span className="font-bold text-success">${balance}</span>
+              </div>
+              <div className="text-sm lg:text-base flex items-center gap-1">
+                <span className="opacity-60">ID:</span>
+                <span className="font-bold text-primary">{playerId}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Main Content */}
+        <div className="flex-1 pb-24 lg:pb-20 pt-32 overflow-hidden flex flex-col">
+          {gamePhase === 'selection' && !showBetPopup && (
+            <>
+              {/* Mini Header - Horizontal */}
+              <div className="bg-gradient-to-r from-card to-muted border-b border-border px-3 py-2 lg:px-6 lg:py-3 shadow-sm">
+                <div className="flex items-center justify-between gap-2 lg:gap-4">
+                  <div className="text-sm lg:text-base flex items-center gap-1">
+                    <span className="opacity-60">Players:</span>
+                    <span className="font-bold text-primary">{players}</span>
+                  </div>
+                  <div className="text-sm lg:text-base flex items-center gap-1">
+                    <span className="opacity-60">Payout:</span>
+                    <span className="font-bold text-success">${payout.toFixed(0)}</span>
+                  </div>
+                  <div className="text-sm lg:text-base flex items-center gap-1">
+                    <span className="opacity-60">Game ID:</span>
+                    <span className="font-bold">{gameId}</span>
+                  </div>
+                  <div className="text-sm lg:text-base flex items-center gap-1">
+                    <span className="opacity-60">Time:</span>
+                    <span className="font-bold text-destructive">{countdown}s</span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Board Selection - Inline between header and navigation */}
+              <div className="bg-gradient-to-t from-card to-muted p-1 sm:p-2 lg:p-3 shadow-xl">
+                <div className="w-full">
+                  <div className="grid grid-cols-8 sm:grid-cols-10 md:grid-cols-12 lg:grid-cols-16 xl:grid-cols-20 gap-0.5 sm:gap-1 lg:gap-2 max-h-20 sm:max-h-24 md:max-h-28 lg:max-h-32 xl:max-h-36 overflow-auto">
+                    {getBoardNumbers().map(num => (
+                      <button
+                        key={num}
+                        onClick={() => handleNumberSelect(num)}
+                        className={`aspect-square rounded-md sm:rounded-lg flex items-center justify-center text-xs sm:text-xs md:text-sm lg:text-sm font-bold transition-all hover:scale-110 shadow-md ${
+                          betNumbers.includes(num)
+                            ? 'bg-gradient-to-br from-success to-green-700 text-success-foreground shadow-xl ring-2 ring-green-300 scale-105'
+                            : 'bg-gradient-to-br from-primary to-secondary text-primary-foreground hover:opacity-90'
+                        }`}
+                      >
+                        {num}
+                      </button>
+                    ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* History Popup */}
+      {showHistory && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-card to-muted rounded-2xl p-6 lg:p-8 max-w-sm lg:max-w-lg w-full max-h-[80vh] overflow-y-auto shadow-2xl border-2 border-primary/30">
+            <div className="flex gap-2 mb-4">
+              <button
+                onClick={() => setHistoryTab('game')}
+                className={`flex-1 py-2 rounded-lg font-medium transition-all ${
+                  historyTab === 'game' ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg' : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                Game
+              </button>
+              <button
+                onClick={() => setHistoryTab('history')}
+                className={`flex-1 py-2 rounded-lg font-medium transition-all ${
+                  historyTab === 'history' ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg' : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                History
+              </button>
+              <button
+                onClick={() => setHistoryTab('userhistory')}
+                className={`flex-1 py-2 rounded-lg font-medium transition-all ${
+                  historyTab === 'userhistory' ? 'bg-gradient-to-r from-primary to-secondary text-primary-foreground shadow-lg' : 'bg-muted hover:bg-muted/80'
+                }`}
+              >
+                User
+              </button>
+            </div>
+
+            <div className="mb-4">
+              <div className="font-bold mb-2 text-lg">Called Numbers ({calledNumbers.length})</div>
+              <div className="flex flex-wrap gap-1 lg:gap-2">
+                {calledNumbers.map(num => (
+                  <div key={num} className={`px-2 py-1 lg:px-3 lg:py-2 rounded font-medium ${
+                    betNumbers.includes(num)
+                      ? 'bg-gradient-to-br from-success to-green-700 text-success-foreground shadow-lg'
+                      : 'bg-gradient-to-br from-primary to-indigo-600 text-primary-foreground'
+                  }`}>
+                    {num}
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <button
+              onClick={() => setShowHistory(false)}
+              className="w-full bg-gradient-to-r from-primary to-secondary text-primary-foreground py-2 lg:py-3 rounded-lg font-medium hover:scale-105 transition-transform shadow-lg"
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Bottom Controls - Fixed at bottom */}
+      <div className="fixed bottom-0 left-0 right-0 bg-gradient-to-r from-card to-muted border-t-2 border-primary/20 p-1.5 sm:p-2 lg:p-3 flex justify-between items-center shadow-2xl backdrop-blur-sm z-20">
+        <button
+          onClick={() => setDarkMode(!darkMode)}
+          className="p-1.5 sm:p-2 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-muted to-gray-300 dark:from-muted dark:to-gray-700 hover:scale-110 transition-transform shadow-lg"
+        >
+          {darkMode ? <Sun className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" /> : <Moon className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+        </button>
+        <button
+          onClick={handleReset}
+          className="p-1.5 sm:p-2 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-primary to-secondary text-primary-foreground hover:scale-110 transition-transform shadow-lg"
+        >
+          <RefreshCw className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />
+        </button>
+        <button
+          onClick={() => setSoundOn(!soundOn)}
+          className="p-1.5 sm:p-2 lg:p-3 rounded-lg sm:rounded-xl bg-gradient-to-br from-muted to-gray-300 dark:from-muted dark:to-gray-700 hover:scale-110 transition-transform shadow-lg"
+        >
+          {soundOn ? <Volume2 className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" /> : <VolumeX className="w-4 h-4 sm:w-5 sm:h-5 lg:w-6 lg:h-6" />}
+        </button>
+      </div>
+
+      {/* Bet Popup */}
+      {showBetPopup && selectedNumber && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-card to-muted rounded-2xl p-6 lg:p-8 max-w-sm lg:max-w-md w-full shadow-2xl border-2 border-primary/30">
+            <div className="text-center mb-4">
+              <div className="opacity-60 text-sm lg:text-base">Board Number</div>
+              <div className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-primary to-secondary">{selectedNumber}</div>
+            </div>
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <span className="text-sm lg:text-base opacity-60">Bet Amount:</span>
+                <span className="font-bold text-lg lg:text-xl">${amount}</span>
+              </div>
+              <div className="flex items-center justify-between">
+                <span className="text-sm lg:text-base opacity-60">Your Balance:</span>
+                <span className="font-bold text-lg lg:text-xl">${balance}</span>
+              </div>
+            </div>
+            <div className="flex gap-2 mt-6">
+              <button
+                onClick={() => {
+                  if (balance >= amount) {
+                    setBalance(balance - amount);
+                    setBetNumbers([...betNumbers, selectedNumber]);
+                    setShowBetPopup(false);
+                    setSelectedNumber(null);
+                  }
+                }}
+                className="flex-1 bg-gradient-to-r from-primary to-secondary text-primary-foreground py-2 lg:py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
+              >
+                Place Bet
+              </button>
+              <button
+                onClick={() => {
+                  setShowBetPopup(false);
+                  setSelectedNumber(null);
+                }}
+                className="flex-1 bg-gradient-to-r from-muted to-gray-300 dark:from-muted dark:to-gray-700 text-foreground py-2 lg:py-3 rounded-xl font-bold hover:scale-105 transition-transform shadow-lg"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Winner Popup */}
+      {showWinPopup && playerBoards[0] && (
+        <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 z-50">
+          <div className="bg-gradient-to-br from-card to-muted rounded-2xl p-6 lg:p-8 max-w-sm lg:max-w-md w-full shadow-2xl border-2 border-success/50">
+            <div className="text-center mb-4">
+              <div className="opacity-60 text-sm">Player: {playerId}</div>
+              <div className="text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-success to-green-600 mb-2">
+                ${payout.toFixed(0)}
+              </div>
+            </div>
+
+            <div className="mb-4">
+              <div className="grid grid-cols-5 gap-1 lg:gap-2 mb-2">
+                {['B', 'I', 'N', 'G', 'O'].map(letter => (
+                  <div key={letter} className="bg-gradient-to-br from-primary to-secondary text-primary-foreground text-center py-1 lg:py-2 rounded font-bold">
+                    {letter}
+                  </div>
+                ))}
+              </div>
+              <div className="grid grid-cols-5 gap-1 lg:gap-2">
+                {Array.from({ length: 5 }).map((_, row) =>
+                  Array.from({ length: 5 }).map((_, col) => {
+                    const num = playerBoards[0][col][row];
+                    const isCalled = isNumberCalled(num);
+                    return (
+                      <div
+                        key={`${col}-${row}`}
+                        className={`aspect-square flex items-center justify-center rounded text-xs lg:text-sm font-bold ${
+                          num === -1
+                            ? 'bg-accent text-accent-foreground'
+                            : isCalled
+                            ? 'bg-success text-success-foreground'
+                            : 'bg-muted'
+                        }`}
+                      >
+                        {num === -1 ? 'FREE' : num}
+                      </div>
+                    );
+                  })
+                )}
+              </div>
+            </div>
+
+            <div className="text-center mb-4">
+              <div className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-success to-green-600 mb-2 animate-pulse">
+                GOOD BINGO!
+              </div>
+              <div className="opacity-60">Last Call: <span className="font-bold text-destructive">{currentCall}</span></div>
+              <div className="text-5xl lg:text-6xl font-bold text-primary mt-2">{winCountdown}</div>
+            </div>
+          </div>
+        </div>
+      )}
+
+  </div>
+  </>
+);
+}
