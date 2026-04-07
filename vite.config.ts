@@ -41,4 +41,11 @@ export default defineConfig({
     host: true,
     port: 5173, // You can change the port if needed
   },
+
+  // Allow Render to access the preview server
+  preview: {
+    allowedHosts: ["bingo-0gwl.onrender.com"],
+    host: true,
+    port: 5173, // Using default or PORT env
+  },
 })
