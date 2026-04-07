@@ -14,13 +14,52 @@ export default defineConfig({
       name: 'player-data-api',
       configureServer(server) {
         server.middlewares.use('/api/player-data', async (req, res, next) => {
-          if (req.method === 'POST') {
-            return POST(req);
-          } else if (req.method === 'GET') {
-            return GET(req);
-          } else {
-            res.writeHead(405, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Method not allowed' }));
+          try {
+            const protocol = (req.socket as any).encrypted ? 'https' : 'http';
+            const host = req.headers.host || 'localhost';
+            const url = `${protocol}://${host}${req.url}`;
+            
+            let body: string | null = null;
+            if (req.method === 'POST') {
+              const chunks = [];
+              for await (const chunk of req) {
+                chunks.push(chunk);
+              }
+              body = Buffer.concat(chunks).toString();
+            }
+
+            const fetchReq = {
+              method: req.method,
+              json: async () => body ? JSON.parse(body) : {},
+              url: url
+            };
+
+            let response: any;
+            if (req.method === 'POST') {
+              response = await POST(fetchReq);
+            } else if (req.method === 'GET') {
+              response = await GET(fetchReq);
+            } else {
+              res.writeHead(405, { 'Content-Type': 'application/json' });
+              res.end(JSON.stringify({ error: 'Method not allowed' }));
+              return;
+            }
+
+            // Extract headers from Fetch Response
+            const headers: Record<string, string> = {};
+            if (response.headers && typeof response.headers.forEach === 'function') {
+              response.headers.forEach((value: string, key: string) => {
+                headers[key] = value;
+              });
+            }
+
+            const resData = await response.json();
+            res.writeHead(response.status || 200, headers);
+            res.end(JSON.stringify(resData));
+          } catch (err: any) {
+            console.error('API Error:', err);
+            res.writeHead(500, { 'Content-Type': 'application/json' });
+            res.end(JSON.stringify({ error: 'Internal Server Error', details: err?.message || 'Unknown error' }));
           }
         });
       }
