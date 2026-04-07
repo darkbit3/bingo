@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>⏰ Countdown Timer Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            color: white;
+        }
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .test-container {
+            background: white;
+            color: #333;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+        }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 6px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        .countdown-display {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            text-align: center;
+            border-left: 4px solid #007bff;
+        }
+        .countdown-value {
+            font-size: 36px;
+            font-weight: bold;
+            color: #007bff;
+        }
+        .instructions {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+        }
+        .checklist {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .checklist h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .checklist ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .checklist li {
+            margin: 8px 0;
+            color: #6c757d;
+        }
+        .checklist li.checked {
+            color: #28a745;
+            text-decoration: line-through;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 6px;
+            margin: 5px;
+            cursor: pointer;
+            font-weight: 500;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .test-log {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>⏰ Countdown Timer Test</h1>
+        <p>Testing countdown functionality and synchronization</p>
+    </div>
+
+    <div class="instructions">
+        <h3>📋 Test Instructions:</h3>
+        <ol>
+            <li><strong>Open the bingo application in the iframe below</strong></li>
+            <li><strong>Observe the countdown timer starts at 60 seconds</strong></li>
+            <li><strong>Verify it counts down correctly every second</strong></li>
+            <li><strong>Test changing Room/Amount resets countdown to 60</strong></li>
+            <li><strong>Verify game transitions to 'playing' when countdown reaches 0</strong></li>
+        </ol>
+        
+        <h3>🎯 Expected Behavior:</h3>
+        <ul>
+            <li>Countdown starts at 60 seconds</li>
+            <li>Decrements by 1 every second</li>
+            <li>Stops at 0 and transitions to playing phase</li>
+            <li>Resets to 60 when Room/Amount changes</li>
+            <li>No multiple countdown intervals running</li>
+        </ul>
+    </div>
+
+    <div class="test-container">
+        <h3>🧪 Test Checklist</h3>
+        <div class="checklist">
+            <h4>✅ Countdown Functionality:</h4>
+            <ul id="checklist">
+                <li>□ Countdown starts at 60 seconds</li>
+                <li>□ Counts down by 1 every second</li>
+                <li>□ Stops at 0 (doesn't go negative)</li>
+                <li>□ Transitions to playing phase at 0</li>
+                <li>□ Resets when Room changes</li>
+                <li>□ Resets when Amount changes</li>
+                <li>□ No multiple timers running</li>
+                <li>□ Smooth animation and display</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>⏰ Countdown Monitor</h3>
+        <div class="countdown-display">
+            Current Countdown: <span id="countdownValue" class="countdown-value">--</span> seconds
+        </div>
+        <div id="status" class="status info">Monitoring countdown...</div>
+        <div class="test-log" id="testLog">
+            <div>📊 Countdown Test Log:</div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>📱 Test Application</h3>
+        <iframe src="http://localhost:5173/" id="testFrame"></iframe>
+    </div>
+
+    <div class="test-container">
+        <h3>🔧 Test Controls</h3>
+        <button onclick="startMonitoring()">🔍 Start Monitoring</button>
+        <button onclick="stopMonitoring()">⏹️ Stop Monitoring</button>
+        <button onclick="clearLog()">🗑️ Clear Log</button>
+        <button onclick="testRoomChange()">🔄 Test Room Change</button>
+        <button onclick="testAmountChange()">💰 Test Amount Change</button>
+    </div>
+
+    <script>
+        let monitoringInterval = null;
+        let lastCountdown = null;
+        let testStartTime = Date.now();
+
+        function updateStatus(message, type = 'info') {
+            const statusEl = document.getElementById('status');
+            if (statusEl) {
+                statusEl.className = `status ${type}`;
+                statusEl.textContent = message;
+            }
+        }
+
+        function updateCountdown(value) {
+            const countdownEl = document.getElementById('countdownValue');
+            if (countdownEl) {
+                countdownEl.textContent = value;
+            }
+            
+            // Log changes
+            if (lastCountdown !== null && lastCountdown !== value) {
+                addLogEntry(`Countdown changed: ${lastCountdown} → ${value}`);
+                lastCountdown = value;
+                
+                // Check for expected behavior
+                if (value === 0) {
+                    addLogEntry('✅ Countdown reached 0 - should transition to playing phase');
+                    updateStatus('✅ Countdown completed successfully!', 'success');
+                }
+            } else if (lastCountdown === null) {
+                lastCountdown = value;
+                addLogEntry(`📊 Initial countdown: ${value}`);
+            }
+        }
+
+        function addLogEntry(message) {
+            const logEl = document.getElementById('testLog');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.textContent = `[${timestamp}] ${message}`;
+            logEl.appendChild(entry);
+            logEl.scrollTop = logEl.scrollHeight;
+        }
+
+        function monitorCountdown() {
+            try {
+                const iframe = document.getElementById('testFrame');
+                const iframeDoc = iframe.contentDocument || iframe.contentWindow.document;
+                
+                // Try to find countdown element in the iframe
+                const countdownElements = iframeDoc.querySelectorAll('*');
+                let countdownFound = false;
+                
+                for (let element of countdownElements) {
+                    const text = element.textContent || element.innerText;
+                    if (text && text.match(/^\d+$/)) {
+                        const value = parseInt(text);
+                        if (value >= 0 && value <= 60) {
+                            updateCountdown(value);
+                            countdownFound = true;
+                            break;
+                        }
+                    }
+                }
+                
+                if (!countdownFound) {
+                    updateCountdown('--');
+                }
+                
+            } catch (error) {
+                // Cross-origin restrictions - use localStorage monitoring
+                const gameState = localStorage.getItem('bingo_game_state');
+                if (gameState) {
+                    try {
+                        const state = JSON.parse(gameState);
+                        if (state.countdown !== undefined) {
+                            updateCountdown(state.countdown);
+                        }
+                    } catch (e) {
+                        // Ignore parsing errors
+                    }
+                }
+            }
+        }
+
+        function startMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+            }
+            
+            monitoringInterval = setInterval(monitorCountdown, 1000);
+            updateStatus('🔍 Monitoring countdown...', 'info');
+            addLogEntry('📊 Started countdown monitoring');
+        }
+
+        function stopMonitoring() {
+            if (monitoringInterval) {
+                clearInterval(monitoringInterval);
+                monitoringInterval = null;
+                updateStatus('⏹️ Monitoring stopped', 'warning');
+                addLogEntry('⏹️ Stopped countdown monitoring');
+            }
+        }
+
+        function clearLog() {
+            const logEl = document.getElementById('testLog');
+            logEl.innerHTML = '<div>📊 Countdown Test Log:</div>';
+            lastCountdown = null;
+        }
+
+        function testRoomChange() {
+            addLogEntry('🔄 Testing room change...');
+            // This would require access to the iframe, which is restricted
+            // User must manually test this in the iframe
+            updateStatus('🔄 Please manually change Room in the iframe above', 'info');
+        }
+
+        function testAmountChange() {
+            addLogEntry('💰 Testing amount change...');
+            updateStatus('💰 Please manually change Amount in the iframe above', 'info');
+        }
+
+        // Initialize monitoring when page loads
+        window.onload = () => {
+            const iframe = document.getElementById('testFrame');
+            iframe.onload = () => {
+                setTimeout(() => {
+                    startMonitoring();
+                    updateStatus('✅ Test application loaded, monitoring started', 'success');
+                }, 2000); // Wait for app to fully load
+            };
+        };
+    </script>
+</body>
+</html>

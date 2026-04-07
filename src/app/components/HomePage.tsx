@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { ChevronLeft, ChevronRight } from 'lucide-react';
-import Header from './Header';
 import MiniHeader from './MiniHeader';
 import Footer from './Footer';
 import PlayingPage from './PlayingPage';
@@ -21,6 +20,9 @@ interface HomePageProps {
   showBetPopup: boolean;
   betNumbers: number[];
   boardRange: '1-100' | '101-200' | '201-300' | '301-400';
+  playerIds: string;
+  selectedBoards: string;
+  playerBoards: number[][][];
   onDarkModeToggle: () => void;
   onSoundToggle: () => void;
   onAmountChange: (value: number) => void;
@@ -34,7 +36,6 @@ interface HomePageProps {
   shouldBlink: boolean;
   calledNumbers: number[];
   currentCall: number | null;
-  playerBoards: number[][][];
   onBingo: (boardIndex: number) => void;
 }
 
@@ -54,6 +55,8 @@ export default function HomePage({
   showBetPopup,
   betNumbers,
   boardRange,
+  playerIds,
+  selectedBoards,
   playerBoards,
   onBingo,
   onDarkModeToggle,
@@ -73,16 +76,6 @@ export default function HomePage({
   return (
     <div className="h-screen bg-background text-foreground flex flex-col overflow-hidden">
       <div className="w-full flex flex-col h-full">
-        {/* Header Component */}
-        <Header
-          amount={amount}
-          room={room}
-          balance={balance}
-          playerId={playerId}
-          onAmountChange={onAmountChange}
-          onRoomChange={onRoomChange}
-        />
-
         {/* Mini Header Component */}
         <MiniHeader
           players={players}
@@ -168,6 +161,32 @@ export default function HomePage({
                 <ChevronRight className="w-4 h-4 sm:w-5 sm:h-5 md:w-6 md:h-6 lg:w-7 lg:h-7 relative z-10" />
               </button>
             </div>
+
+            {/* Selected Board Display with Player ID */}
+            {playerIds && selectedBoards && (
+              <div className="mt-4 p-3 bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-purple-500/50 rounded-2xl shadow-lg">
+                <h3 className="text-sm font-bold text-purple-300 mb-2 text-center">Selected Boards</h3>
+                <div className="space-y-1 max-h-20 overflow-y-auto">
+                  {(() => {
+                    const players = playerIds.split(',');
+                    const boards = selectedBoards.split(',');
+                    return players.map((player, index) => {
+                      const boardNum = boards[index]?.trim() || 'N/A';
+                      const isMarked = betNumbers.includes(parseInt(boardNum));
+                      return (
+                        <div key={index} className={`flex items-center justify-between text-xs p-1 rounded ${isMarked ? 'bg-green-900/30 border border-green-500/50' : ''}`}>
+                          <span className="text-blue-300 font-mono">{player.trim()}</span>
+                          <span className={`font-bold ${isMarked ? 'text-green-400' : 'text-amber-300'}`}>
+                            Board: {boardNum}
+                            {isMarked && <span className="ml-1 text-green-400">✓</span>}
+                          </span>
+                        </div>
+                      );
+                    });
+                  })()}
+                </div>
+              </div>
+            )}
           </div>
         ) : (
           <PlayingPage

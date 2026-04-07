@@ -1,3 +1,5 @@
+import { useSmartBet, useSmartBetBalance } from '../../contexts/SmartBetContext';
+
 interface PopupModalProps {
   showBetPopup: boolean;
   selectedNumber: number | null;
@@ -5,9 +7,12 @@ interface PopupModalProps {
   balance: number;
   onPlaceBet: () => void;
   onCancel: () => void;
+  onLoginRequired?: () => void;
   isPlacingBet?: boolean;
   betAccepted?: boolean;
   isAlreadyBet?: boolean;
+  isDatabaseBoard?: boolean;
+  playerId?: string;
 }
 
 export default function PopupModal({
@@ -17,11 +22,33 @@ export default function PopupModal({
   balance,
   onPlaceBet,
   onCancel,
+  onLoginRequired,
   isPlacingBet = false,
   betAccepted = false,
-  isAlreadyBet = false
+  isAlreadyBet = false,
+  isDatabaseBoard = false,
+  playerId = ''
 }: PopupModalProps) {
+  // Smart Bet integration
+  const { isAuthenticated, redirectToLogin } = useSmartBet();
+  const { canPlaceBet, getBettingLimits } = useSmartBetBalance();
+  
   if (!showBetPopup || !selectedNumber) return null;
+
+  const handlePlaceBet = () => {
+    if (!isAuthenticated) {
+      onLoginRequired?.();
+      return;
+    }
+    
+    if (!canPlaceBet(amount)) {
+      const limits = getBettingLimits(amount);
+      alert(limits.reason || 'Insufficient balance');
+      return;
+    }
+    
+    onPlaceBet();
+  };
 
   const handleBackdropClick = (e: React.MouseEvent) => {
     if (e.target === e.currentTarget) {
@@ -29,6 +56,10 @@ export default function PopupModal({
     }
   };
 
+  // Check if user can place bet
+  const bettingLimits = getBettingLimits(amount);
+  const canUserBet = isAuthenticated && canPlaceBet(amount);
+  
   // Generate 5x5 grid with X in the center
   const generateGrid = () => {
     const grid = [];
@@ -40,7 +71,7 @@ export default function PopupModal({
       } else {
         // Generate random numbers around the selected number
         const offset = Math.floor(Math.random() * 21) - 10; // -10 to +10
-        let randomNum = selectedNumber + offset;
+        let randomNum: number = selectedNumber + offset;
         
         // Ensure the number is within reasonable range (1-400)
         if (randomNum < 1) randomNum = 400 + randomNum;
@@ -57,18 +88,31 @@ export default function PopupModal({
     <div className="fixed inset-0 bg-black/70 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-50" onClick={handleBackdropClick}>
       <div className="bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 rounded-2xl sm:rounded-3xl p-6 sm:p-8 md:p-10 max-w-sm sm:max-w-md w-full shadow-2xl border-2 border-amber-500/30 backdrop-blur-xl">
         
+        {/* Player ID Display for Database Boards */}
+        {isDatabaseBoard && playerId && (
+          <div className="text-center mb-4 p-3 bg-gradient-to-r from-purple-900/50 to-blue-900/50 border border-purple-500/50 rounded-xl">
+            <div className="text-xs text-purple-300 mb-1 font-medium">Board Owner</div>
+            <div className="text-sm sm:text-base text-blue-300 font-bold font-mono">
+              {playerId}
+            </div>
+          </div>
+        )}
+
         {/* Selected Number Display */}
         <div className="text-center mb-6 sm:mb-8">
           <div className="text-xs sm:text-sm md:text-base text-gray-400 mb-2 font-medium">
-            {isPlacingBet ? 'Placing Bet...' : betAccepted ? 'Bet Accepted!' : isAlreadyBet ? 'Already Bet' : 'Selected Number'}
+            {isPlacingBet ? 'Placing Bet...' : betAccepted ? 'Bet Accepted!' : isDatabaseBoard || isAlreadyBet ? 'Already Bet' : 'Selected Number'}
           </div>
           <div className={`text-2xl sm:text-3xl md:text-4xl font-bold transition-all duration-300 ${
-            betAccepted ? 'text-green-400' : isAlreadyBet ? 'text-yellow-400' : 'text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 animate-pulse'
+            betAccepted ? 'text-green-400' : isDatabaseBoard || isAlreadyBet ? 'text-yellow-400' : 'text-transparent bg-clip-text bg-gradient-to-r from-amber-400 to-orange-500 animate-pulse'
           }`}>
             {selectedNumber}
           </div>
           {betAccepted && (
             <div className="text-green-400 text-sm mt-2 animate-bounce">✓ Successfully Placed</div>
+          )}
+          {isDatabaseBoard && (
+            <div className="text-yellow-400 text-sm mt-2">⚠ Database Board</div>
           )}
         </div>
         
@@ -93,8 +137,8 @@ export default function PopupModal({
         {/* Action Buttons */}
         <div className="flex gap-3 sm:gap-4">
           <button
-            onClick={onPlaceBet}
-            disabled={balance < amount || isPlacingBet || betAccepted || isAlreadyBet}
+            onClick={handlePlaceBet}
+            disabled={!canUserBet || isPlacingBet || betAccepted || isAlreadyBet || isDatabaseBoard}
             className="flex-1 group relative bg-gradient-to-r from-green-600 to-emerald-600 text-white py-3 sm:py-4 rounded-2xl font-bold hover:scale-105 active:scale-95 transition-all duration-300 shadow-lg hover:shadow-green-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:scale-100 text-sm sm:text-base overflow-hidden"
           >
             <div className="absolute inset-0 bg-gradient-to-r from-green-400 to-emerald-400 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
@@ -109,7 +153,7 @@ export default function PopupModal({
                   <span className="text-green-200">✓</span>
                   <span>Bet Accepted</span>
                 </>
-              ) : isAlreadyBet ? (
+              ) : isAlreadyBet || isDatabaseBoard ? (
                 <>
                   <span className="text-yellow-200">!</span>
                   <span>Already Bet</span>
@@ -130,7 +174,7 @@ export default function PopupModal({
           >
             <div className="absolute inset-0 bg-gradient-to-r from-gray-600 to-gray-700 opacity-0 group-hover:opacity-20 transition-opacity duration-300"></div>
             <span className="relative z-10">
-              {isAlreadyBet ? 'Cancel Bet' : 'Cancel'}
+              {isAlreadyBet || isDatabaseBoard ? 'View Board' : 'Cancel'}
             </span>
           </button>
         </div>

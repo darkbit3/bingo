@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 
 interface BingoModalProps {
   show: boolean;
@@ -10,19 +10,66 @@ interface BingoModalProps {
 export default function BingoModal({ show, currentCall, calledNumbers, onClose }: BingoModalProps) {
   const [bingoStatus, setBingoStatus] = useState<'checking' | 'good'>('checking');
 
+  useEffect(() => {
+    if (!show) {
+      return;
+    }
+    
+    // Reset status when modal opens
+    setBingoStatus('checking');
+    
+    // Start the bingo verification process
+    const timer1 = setTimeout(() => {
+      setBingoStatus('good');
+    }, 3000);
+    
+    const timer2 = setTimeout(() => {
+      if (bingoStatus === 'good') {
+        onClose();
+      }
+    }, 5000);
+    
+    return () => {
+      clearTimeout(timer1);
+      clearTimeout(timer2);
+    };
+  }, [show, onClose]);
+
   if (!show) return null;
 
-  // Start the bingo verification process
-  setTimeout(() => {
-    setBingoStatus('good');
-    setTimeout(() => {
-      onClose();
-    }, 2000);
-  }, 3000);
+  // Generate board numbers
+  const generateBoardNumbers = () => {
+    const board = [];
+    for (let row = 0; row < 5; row++) {
+      const rowNumbers = [];
+      for (let col = 0; col < 5; col++) {
+        if (row === 2 && col === 2) {
+          rowNumbers.push('FREE');
+        } else {
+          let min, max;
+          switch(col) {
+            case 0: min = 1; max = 15; break;
+            case 1: min = 16; max = 30; break;
+            case 2: min = 31; max = 45; break;
+            case 3: min = 46; max = 60; break;
+            case 4: min = 61; max = 75; break;
+            default: min = 1; max = 15;
+          }
+          const number = min + row;
+          rowNumbers.push(number);
+        }
+      }
+      board.push(rowNumbers);
+    }
+    return board;
+  };
+
+  const boardNumbers = generateBoardNumbers();
 
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50">
-      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 lg:p-8 max-w-sm lg:max-w-md w-full shadow-2xl border-2 border-green-500/50 relative">
+      <div className="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl p-6 lg:p-8 max-w-md lg:max-w-lg w-full shadow-2xl border-2 border-green-500/50 relative max-h-[90vh] overflow-y-auto">
+        
         {/* Last Call Number - Top Right Corner */}
         {currentCall && (
           <div className="absolute top-4 right-4 bg-gradient-to-br from-amber-500 via-orange-500 to-red-500 rounded-lg p-2 shadow-xl border-2 border-amber-400/50">
@@ -31,107 +78,95 @@ export default function BingoModal({ show, currentCall, calledNumbers, onClose }
           </div>
         )}
         
-        {/* Player ID and Amount - Side by Side */}
-        <div className="text-center mb-4">
-          <div className="text-gray-400 text-sm">Player: P7410</div>
-          <div className="text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 mb-2">$192</div>
-        </div>
-        
-        {/* Status Message */}
-        <div className="text-center mb-4">
-          <div className="text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 mb-2 animate-pulse">
-            {bingoStatus === 'checking' ? 'Checking BINGO...' : 'GOOD BINGO!'}
-          </div>
-          <div className="text-gray-400">
-            {bingoStatus === 'checking' ? 'Verifying your winning pattern...' : 'Last Call:'} 
-            <span className="font-bold text-red-400 ml-1">{currentCall || ''}</span>
-          </div>
-          <div className="text-5xl lg:text-6xl font-bold text-blue-400 mt-2">
-            {bingoStatus === 'checking' ? '🔍' : '🎉'}
+        {/* Player ID and Amount */}
+        <div className="flex items-center justify-center gap-4 mb-6">
+          <div className="text-gray-300 text-base">Player: P75958</div>
+          <div className="text-3xl lg:text-4xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600">
+            $184
           </div>
         </div>
         
-        {/* 5x5 Board Display in Modal */}
-        <div className="flex justify-center mb-4">
-          <div className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl p-3">
+        {/* 5x5 BINGO Board */}
+        <div className="flex justify-center mb-6">
+          <div className="bg-gradient-to-br from-gray-700 to-gray-800 rounded-xl p-4 shadow-xl">
             {/* BINGO Header */}
-            <div className="flex gap-1 sm:gap-2 mb-2">
-              <div className="text-center flex-1">
-                <div className="text-amber-400 font-bold text-[10px] sm:text-[12px] drop-shadow-lg">B</div>
-              </div>
-              <div className="text-center flex-1">
-                <div className="text-amber-400 font-bold text-[10px] sm:text-[12px] drop-shadow-lg">I</div>
-              </div>
-              <div className="text-center flex-1">
-                <div className="text-amber-400 font-bold text-[10px] sm:text-[12px] drop-shadow-lg">N</div>
-              </div>
-              <div className="text-center flex-1">
-                <div className="text-amber-400 font-bold text-[10px] sm:text-[12px] drop-shadow-lg">G</div>
-              </div>
-              <div className="text-center flex-1">
-                <div className="text-amber-400 font-bold text-[10px] sm:text-[12px] drop-shadow-lg">O</div>
-              </div>
+            <div className="grid grid-cols-5 gap-1 sm:gap-2 mb-2">
+              {['B', 'I', 'N', 'G', 'O'].map((letter, idx) => (
+                <div key={idx} className="text-center">
+                  <div className="text-amber-400 font-bold text-sm sm:text-base drop-shadow-lg">{letter}</div>
+                </div>
+              ))}
             </div>
             
             {/* 5x5 Grid */}
-            <div className="grid gap-1 w-[200px] h-[200px]" style={{ gridTemplateColumns: 'repeat(5, minmax(0, 1fr))', gridTemplateRows: 'repeat(5, minmax(0, 1fr))' }}>
-              {Array.from({ length: 25 }).map((_, index) => {
-                const col = index % 5;
-                const row = Math.floor(index / 5);
-                
-                let cellNumber = null;
-                const ranges = {
-                  0: [1, 15],      // B
-                  1: [16, 30],     // I
-                  2: [31, 45],     // N
-                  3: [46, 60],     // G
-                  4: [61, 75]      // O
-                };
-                
-                const [min] = ranges[col as keyof typeof ranges];
-                cellNumber = min + row;
-                
-                if (col === 2 && row === 2) {
+            <div className="grid grid-cols-5 gap-1 sm:gap-2">
+              {boardNumbers.map((row, rowIndex) => (
+                row.map((cell, colIndex) => {
+                  const isFree = cell === 'FREE';
+                  const isCalled = !isFree && typeof cell === 'number' && calledNumbers.includes(cell);
+                  
                   return (
                     <div
-                      key={index}
-                      className="rounded w-full h-full bg-gradient-to-br from-amber-500 to-orange-500 text-black flex items-center justify-center font-bold text-[10px] sm:text-[12px] shadow-lg shadow-amber-500/30 border border-amber-400/50"
+                      key={`${rowIndex}-${colIndex}`}
+                      className={`
+                        w-10 h-10 sm:w-12 sm:h-12 md:w-14 md:h-14
+                        rounded-lg flex items-center justify-center font-bold
+                        transition-all duration-300 text-xs sm:text-sm
+                        ${isFree 
+                          ? 'bg-gradient-to-br from-amber-500 to-orange-500 text-black shadow-lg shadow-amber-500/30 border-2 border-amber-400/50'
+                          : isCalled
+                            ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30 border-2 border-green-400/50 scale-105'
+                            : 'bg-gradient-to-br from-gray-600 to-gray-700 text-gray-200 border border-gray-500/30 hover:scale-105'
+                        }
+                      `}
                     >
-                      FREE
+                      {cell}
                     </div>
                   );
-                }
-                
-                const isCalled = cellNumber && calledNumbers.includes(cellNumber);
-                
-                return (
-                  <div
-                    key={index}
-                    className={`rounded w-full h-full flex items-center justify-center font-bold transition-all duration-300 ${
-                      isCalled
-                        ? 'bg-gradient-to-br from-green-500 to-emerald-600 text-white shadow-lg shadow-green-500/30 border-2 border-green-400/50'
-                        : 'bg-gradient-to-br from-gray-600 to-gray-700 text-gray-200 border border-gray-500/30'
-                    } text-[10px] sm:text-[12px]`}
-                  >
-                    {cellNumber}
-                  </div>
-                );
-              })}
+                })
+              ))}
             </div>
           </div>
         </div>
         
-        {/* Good Bingo Message */}
-        {bingoStatus === 'good' && (
-          <div className="text-center">
-            <div className="text-green-400 text-lg sm:text-xl font-bold mb-2">
-              🎉 Congratulations! Your bingo has been verified! 🎉
-            </div>
-            <div className="text-white text-sm sm:text-base">
-              Winner! Great job!
-            </div>
+        {/* Status Section */}
+        <div className="text-center space-y-2">
+          {/* Main Status Text */}
+          <div className="text-3xl sm:text-4xl lg:text-5xl font-bold text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-green-600 animate-pulse">
+            {bingoStatus === 'checking' ? 'Checking BINGO...' : '🎉 GOOD BINGO! 🎉'}
           </div>
-        )}
+          
+          {/* Status Details */}
+          <div className="text-gray-300 text-sm sm:text-base">
+            {bingoStatus === 'checking' ? (
+              <span>Verifying your winning pattern...</span>
+            ) : (
+              <span>Winner! Great job!</span>
+            )}
+          </div>
+          
+          {/* Last Call Info */}
+          {currentCall && bingoStatus === 'checking' && (
+            <div className="text-gray-400 text-xs sm:text-sm">
+              Last Call: <span className="text-red-400 font-bold">{currentCall}</span>
+            </div>
+          )}
+          
+          {/* Animation Icon */}
+          <div className="text-4xl sm:text-5xl lg:text-6xl mt-2">
+            {bingoStatus === 'checking' ? '🔍' : '🏆'}
+          </div>
+        </div>
+        
+        {/* Close button (optional) */}
+        <button
+          onClick={onClose}
+          className="absolute top-2 left-2 text-gray-400 hover:text-white transition-colors"
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+          </svg>
+        </button>
       </div>
     </div>
   );

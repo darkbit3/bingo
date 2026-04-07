@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🎯 Bingo Sync Test - Comprehensive</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .header {
+            text-align: center;
+            color: white;
+            margin-bottom: 30px;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.1);
+            backdrop-filter: blur(10px);
+        }
+        .status {
+            padding: 12px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+        .success { background: #d4edda; color: #155724; border-left: 4px solid #28a745; }
+        .info { background: #d1ecf1; color: #0c5460; border-left: 4px solid #17a2b8; }
+        .warning { background: #fff3cd; color: #856404; border-left: 4px solid #ffc107; }
+        .error { background: #f8d7da; color: #721c24; border-left: 4px solid #dc3545; }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+        }
+        .instructions {
+            background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+        }
+        .test-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+        @media (max-width: 768px) {
+            .test-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        .checklist {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .checklist h4 {
+            margin-top: 0;
+            color: #495057;
+        }
+        .checklist ul {
+            margin: 0;
+            padding-left: 20px;
+        }
+        .checklist li {
+            margin: 8px 0;
+            color: #6c757d;
+        }
+        .sync-indicator {
+            display: inline-block;
+            width: 12px;
+            height: 12px;
+            border-radius: 50%;
+            margin-right: 8px;
+            animation: pulse 2s infinite;
+        }
+        .sync-active { background: #28a745; }
+        .sync-idle { background: #6c757d; }
+        @keyframes pulse {
+            0% { opacity: 1; }
+            50% { opacity: 0.5; }
+            100% { opacity: 1; }
+        }
+        .test-controls {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 15px 0;
+        }
+        .test-controls button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 4px;
+            margin: 5px;
+            cursor: pointer;
+        }
+        .test-controls button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🎯 Bingo Real-Time Sync Test</h1>
+        <p>Comprehensive testing for multi-device synchronization</p>
+    </div>
+
+    <div class="instructions">
+        <h3>📋 Test Instructions:</h3>
+        <div class="test-grid">
+            <div>
+                <h4>🔧 Setup:</h4>
+                <ol>
+                    <li>Open this HTML file in two separate browser windows</li>
+                    <li>Both windows should load the bingo application</li>
+                    <li>Wait for both to fully load (green status)</li>
+                </ol>
+            </div>
+            <div>
+                <h4>🧪 Testing:</h4>
+                <ol>
+                    <li>Change Room/Amount in Window 1</li>
+                    <li>Verify Window 2 syncs automatically</li>
+                    <li>Test countdown persistence</li>
+                    <li>Test page reload behavior</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>🧪 Test Checklist</h3>
+        <div class="checklist">
+            <h4>✅ Basic Synchronization:</h4>
+            <ul>
+                <li>□ Both windows show same Room and Amount initially</li>
+                <li>□ Changing Room in one window updates the other</li>
+                <li>□ Changing Amount in one window updates the other</li>
+                <li>□ Sync indicator shows green when syncing</li>
+            </ul>
+        </div>
+        <div class="checklist">
+            <h4>⏰ Countdown Timer:</h4>
+            <ul>
+                <li>□ Countdown is identical in both windows</li>
+                <li>□ Countdown survives page reload</li>
+                <li>□ Countdown continues from correct time after refresh</li>
+                <li>□ Countdown resets when Room/Amount changes</li>
+            </ul>
+        </div>
+        <div class="checklist">
+            <h4>🔄 Real-Time Updates:</h4>
+            <ul>
+                <li>□ Game phase changes sync across windows</li>
+                <li>□ Called numbers sync correctly</li>
+                <li>□ No infinite sync loops occur</li>
+                <li>□ Performance remains smooth</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>📱 Test Windows</h3>
+        <div class="test-grid">
+            <div>
+                <h4>🖥️ Window 1 - Control</h4>
+                <div id="status1" class="status info">
+                    <span class="sync-indicator sync-idle"></span>
+                    Loading...
+                </div>
+                <iframe src="http://localhost:5173/" id="frame1"></iframe>
+            </div>
+            <div>
+                <h4>🖥️ Window 2 - Test</h4>
+                <div id="status2" class="status info">
+                    <span class="sync-indicator sync-idle"></span>
+                    Loading...
+                </div>
+                <iframe src="http://localhost:5173/" id="frame2"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <div class="test-container">
+        <h3>🔧 Test Controls</h3>
+        <div class="test-controls">
+            <button onclick="clearLocalStorage()">🗑️ Clear Local Storage</button>
+            <button onclick="reloadFrames()">🔄 Reload Both Windows</button>
+            <button onclick="testSyncEvent()">🧪 Trigger Test Event</button>
+            <button onclick="showDebugInfo()">🐛 Show Debug Info</button>
+        </div>
+        <div id="debugInfo" style="margin-top: 15px; font-family: monospace; font-size: 12px;"></div>
+    </div>
+
+    <script>
+        let syncEvents = [];
+        let testStartTime = Date.now();
+
+        function updateStatus(frameId, message, type = 'info', isSyncing = false) {
+            const statusEl = document.getElementById(`status${frameId}`);
+            const indicator = statusEl.querySelector('.sync-indicator');
+            
+            if (statusEl) {
+                statusEl.className = `status ${type}`;
+                statusEl.innerHTML = `
+                    <span class="sync-indicator ${isSyncing ? 'sync-active' : 'sync-idle'}"></span>
+                    ${message}
+                `;
+            }
+        }
+
+        function monitorFrames() {
+            const frame1 = document.getElementById('frame1');
+            const frame2 = document.getElementById('frame2');
+            
+            [frame1, frame2].forEach((frame, index) => {
+                const frameId = index + 1;
+                
+                frame.onload = () => {
+                    updateStatus(frameId, '✅ Frame loaded successfully', 'success');
+                    console.log(`Frame ${frameId} loaded`);
+                };
+                
+                frame.onerror = () => {
+                    updateStatus(frameId, '❌ Frame failed to load', 'error');
+                };
+            });
+        }
+
+        function monitorLocalStorage() {
+            setInterval(() => {
+                const gameState = localStorage.getItem('bingo_game_state');
+                if (gameState) {
+                    try {
+                        const state = JSON.parse(gameState);
+                        const event = {
+                            timestamp: Date.now(),
+                            room: state.room,
+                            amount: state.amount,
+                            countdown: state.countdown,
+                            gamePhase: state.gamePhase
+                        };
+                        
+                        syncEvents.push(event);
+                        if (syncEvents.length > 10) syncEvents.shift();
+                        
+                        console.log('Sync event detected:', event);
+                    } catch (e) {
+                        console.log('Invalid game state in localStorage');
+                    }
+                }
+            }, 1000);
+        }
+
+        function clearLocalStorage() {
+            localStorage.removeItem('bingo_game_state');
+            syncEvents = [];
+            document.getElementById('debugInfo').innerHTML = 'Local storage cleared!';
+            setTimeout(() => {
+                document.getElementById('debugInfo').innerHTML = '';
+            }, 2000);
+        }
+
+        function reloadFrames() {
+            document.getElementById('frame1').src = 'http://localhost:5173/';
+            document.getElementById('frame2').src = 'http://localhost:5173/';
+            updateStatus(1, '🔄 Reloading...', 'info');
+            updateStatus(2, '🔄 Reloading...', 'info');
+        }
+
+        function testSyncEvent() {
+            const testState = {
+                room: 1,
+                amount: 10,
+                countdown: 45,
+                gamePhase: 'selection',
+                timestamp: Date.now()
+            };
+            
+            localStorage.setItem('bingo_game_state', JSON.stringify(testState));
+            document.getElementById('debugInfo').innerHTML = 'Test sync event sent!';
+            setTimeout(() => {
+                document.getElementById('debugInfo').innerHTML = '';
+            }, 2000);
+        }
+
+        function showDebugInfo() {
+            const gameState = localStorage.getItem('bingo_game_state');
+            const info = `
+                <strong>🐛 Debug Information:</strong><br>
+                Test Runtime: ${Math.floor((Date.now() - testStartTime) / 1000)}s<br>
+                Sync Events: ${syncEvents.length}<br>
+                Current Game State: ${gameState || 'None'}<br>
+                Last Sync Event: ${syncEvents.length > 0 ? new Date(syncEvents[syncEvents.length - 1].timestamp).toLocaleTimeString() : 'None'}
+            `;
+            document.getElementById('debugInfo').innerHTML = info;
+        }
+
+        // Initialize monitoring
+        monitorFrames();
+        monitorLocalStorage();
+        
+        // Update status periodically
+        setInterval(() => {
+            const gameState = localStorage.getItem('bingo_game_state');
+            if (gameState) {
+                try {
+                    const state = JSON.parse(gameState);
+                    updateStatus(1, `📊 Room ${state.room} - $${state.amount} - ${state.countdown}s`, 'info', true);
+                    updateStatus(2, `📊 Room ${state.room} - $${state.amount} - ${state.countdown}s`, 'info', true);
+                } catch (e) {
+                    updateStatus(1, '📊 Monitoring...', 'info', false);
+                    updateStatus(2, '📊 Monitoring...', 'info', false);
+                }
+            } else {
+                updateStatus(1, '📊 Waiting for sync...', 'info', false);
+                updateStatus(2, '📊 Waiting for sync...', 'info', false);
+            }
+        }, 3000);
+
+        // Initial status
+        setTimeout(() => {
+            updateStatus(1, '🔄 Initializing...', 'info');
+            updateStatus(2, '🔄 Initializing...', 'info');
+        }, 1000);
+    </script>
+</body>
+</html>

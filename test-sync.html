@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bingo Sync Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .test-container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+        }
+        .success { background: #d4edda; color: #155724; }
+        .info { background: #d1ecf1; color: #0c5460; }
+        .warning { background: #fff3cd; color: #856404; }
+        iframe {
+            width: 100%;
+            height: 600px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .instructions {
+            background: #e9ecef;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎯 Bingo Real-Time Sync Test</h1>
+    
+    <div class="instructions">
+        <h3>📋 Test Instructions:</h3>
+        <ol>
+            <li><strong>Open this same HTML file in two different browser windows</strong></li>
+            <li><strong>Both windows should show the same Room and Amount</strong></li>
+            <li><strong>Change the Room or Amount in one window</strong></li>
+            <li><strong>The other window should automatically sync to the same values</strong></li>
+            <li><strong>The countdown timer should be synchronized across both windows</strong></li>
+            <li><strong>Refresh one window - the countdown should continue from the correct time</strong></li>
+        </ol>
+        
+        <h3>🔍 What to Look For:</h3>
+        <ul>
+            <li>Green pulsing dot = Currently syncing</li>
+            <li>Gray dot = Idle</li>
+            <li>Room and Amount values should match across windows</li>
+            <li>Countdown should be identical in both windows</li>
+        </ul>
+    </div>
+
+    <div class="test-container">
+        <h3>📱 Test Window 1</h3>
+        <div id="status1" class="status info">Loading...</div>
+        <iframe src="http://localhost:5174/" id="frame1"></iframe>
+    </div>
+
+    <div class="test-container">
+        <h3>📱 Test Window 2</h3>
+        <div id="status2" class="status info">Loading...</div>
+        <iframe src="http://localhost:5174/" id="frame2"></iframe>
+    </div>
+
+    <script>
+        let syncCount = 0;
+        
+        function updateStatus(frameId, message, type = 'info') {
+            const statusEl = document.getElementById(`status${frameId}`);
+            if (statusEl) {
+                statusEl.className = `status ${type}`;
+                statusEl.innerHTML = `🔄 Sync Events: ${syncCount} | ${message}`;
+            }
+        }
+
+        function monitorFrames() {
+            const frame1 = document.getElementById('frame1');
+            const frame2 = document.getElementById('frame2');
+            
+            if (frame1 && frame2) {
+                frame1.onload = () => {
+                    updateStatus(1, '✅ Frame 1 loaded successfully', 'success');
+                    try {
+                        // Try to access the frame content (may be blocked by CORS)
+                        const frame1Doc = frame1.contentDocument || frame1.contentWindow.document;
+                        if (frame1Doc) {
+                            console.log('Frame 1 content accessible');
+                        }
+                    } catch (e) {
+                        console.log('Frame 1 content blocked by CORS (expected)');
+                    }
+                };
+                
+                frame2.onload = () => {
+                    updateStatus(2, '✅ Frame 2 loaded successfully', 'success');
+                };
+                
+                frame1.onerror = () => {
+                    updateStatus(1, '❌ Frame 1 failed to load', 'warning');
+                };
+                
+                frame2.onerror = () => {
+                    updateStatus(2, '❌ Frame 2 failed to load', 'warning');
+                };
+            }
+        }
+
+        function checkLocalStorageSync() {
+            setInterval(() => {
+                const gameState = localStorage.getItem('bingo_game_state');
+                if (gameState) {
+                    try {
+                        const state = JSON.parse(gameState);
+                        syncCount++;
+                        console.log('Sync detected:', state);
+                    } catch (e) {
+                        console.log('Invalid game state in localStorage');
+                    }
+                }
+            }, 1000);
+        }
+
+        // Initialize monitoring
+        monitorFrames();
+        checkLocalStorageSync();
+        
+        // Update status every 5 seconds
+        setInterval(() => {
+            updateStatus(1, '📊 Monitoring sync events...', 'info');
+            updateStatus(2, '📊 Monitoring sync events...', 'info');
+        }, 5000);
+    </script>
+</body>
+</html>
