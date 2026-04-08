@@ -18,38 +18,48 @@ interface ParentMessage {
 class BingoMessageHandler {
   private playerData: PlayerData | null = null;
   private parentOrigin: string = import.meta.env.VITE_PARENT_ORIGIN || 'https://smart-bet-0gwl.onrender.com'; // Smart bet frontend
+  private isEmbedded: boolean = false;
 
   constructor() {
+    this.isEmbedded = window.self !== window.parent; // Check if we're in an iframe
     this.initialize();
   }
 
   private initialize() {
     console.log('🎮 Bingo Message Handler: Initializing...');
     
-    // Listen for messages from parent Smart Bet application
-    window.addEventListener('message', this.handleParentMessage.bind(this));
-    
-    // Notify parent that bingo is ready
-    this.sendToParent({
-      type: 'bingo_ready',
-      data: {
-        timestamp: new Date().toISOString(),
-        version: '1.0.0'
-      }
-    });
+    if (this.isEmbedded) {
+      // Only set up parent communication if we're embedded
+      window.addEventListener('message', this.handleParentMessage.bind(this));
+      
+      // Notify parent that bingo is ready
+      this.sendToParent({
+        type: 'bingo_ready',
+        data: {
+          timestamp: new Date().toISOString(),
+          version: '1.0.0'
+        }
+      });
 
-    // Request initial player data
-    this.sendToParent({
-      type: 'balance_update_request',
-      data: {
-        timestamp: new Date().toISOString()
-      }
-    });
+      // Request initial player data
+      this.sendToParent({
+        type: 'balance_update_request',
+        data: {
+          timestamp: new Date().toISOString()
+        }
+      });
 
-    console.log('✅ Bingo Message Handler: Ready to receive messages');
+      console.log('✅ Bingo Message Handler: Ready to receive messages (embedded mode)');
+    } else {
+      console.log('✅ Bingo Message Handler: Ready (standalone mode)');
+    }
   }
 
   private handleParentMessage(event: MessageEvent) {
+    if (!this.isEmbedded) {
+      return; // Should not happen, but safety check
+    }
+
     // Verify origin for security
     if (event.origin !== this.parentOrigin) {
       console.warn('⚠️ Bingo: Received message from unauthorized origin:', event.origin);
@@ -146,6 +156,11 @@ class BingoMessageHandler {
   }
 
   private sendToParent(message: ParentMessage) {
+    if (!this.isEmbedded) {
+      console.log('📤 Bingo: Skipping parent message (not embedded):', message);
+      return;
+    }
+
     try {
       window.parent.postMessage(message, this.parentOrigin);
       console.log('📤 Bingo: Sent message to parent:', message);
