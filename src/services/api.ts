@@ -3,7 +3,7 @@
 
 export const apiClient = {
   // Base API configuration
-  baseURL: process.env.REACT_APP_API_URL || 'http://localhost:3001',
+  baseURL: import.meta.env.VITE_API_URL || 'https://stage1-vh67.onrender.com',
   
   // Generic request method
   async request(endpoint: string, options: RequestInit = {}) {

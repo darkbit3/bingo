@@ -17,7 +17,7 @@ interface ParentMessage {
 
 class BingoMessageHandler {
   private playerData: PlayerData | null = null;
-  private parentOrigin: string = 'http://localhost:5174'; // Smart bet frontend
+  private parentOrigin: string = import.meta.env.VITE_PARENT_ORIGIN || 'https://smart-bet-0gwl.onrender.com'; // Smart bet frontend
 
   constructor() {
     this.initialize();

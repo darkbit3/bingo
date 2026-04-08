@@ -28,7 +28,7 @@ export const getServerUrl = async (amount: number, room: number): Promise<Server
   const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
   try {
-    const response = await fetch(`${process.env.REACT_APP_API_URL}/server-url/${amount}/${room}`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/server-url/${amount}/${room}`, {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
@@ -72,7 +72,7 @@ export const checkBigServerAvailability = async (): Promise<boolean> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
     
-    const response = await fetch('http://localhost:3000/health', {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/health`, {
       method: 'HEAD',
       signal: controller.signal
     });
@@ -104,18 +104,18 @@ export const getServerUrlWithFallback = async (amount: number, room: number): Pr
     
     // Fallback mapping based on the same constants as BigServer
     const fallbackMapping: { [key: string]: { url: string; name: string } } = {
-      '10&room1': { url: 'http://localhost:3001', name: 'Stage 1' },
-      '10&room2': { url: 'http://localhost:3002', name: 'Stage 2' },
-      '20&room1': { url: 'http://localhost:3003', name: 'Stage 3' },
-      '20&room2': { url: 'http://localhost:3004', name: 'Stage 4' },
-      '30&room1': { url: 'http://localhost:3005', name: 'Stage 5' },
-      '30&room2': { url: 'http://localhost:3006', name: 'Stage 6' },
-      '50&room1': { url: 'http://localhost:3001', name: 'Stage 1' },
-      '50&room2': { url: 'http://localhost:3002', name: 'Stage 2' },
-      '100&room1': { url: 'http://localhost:3003', name: 'Stage 3' },
-      '100&room2': { url: 'http://localhost:3004', name: 'Stage 4' },
-      '200&room1': { url: 'http://localhost:3005', name: 'Stage 5' },
-      '200&room2': { url: 'http://localhost:3006', name: 'Stage 6' }
+      '10&room1': { url: 'https://stage1-vh67.onrender.com', name: 'Stage 1' },
+      '10&room2': { url: 'https://stage2-vh67.onrender.com', name: 'Stage 2' },
+      '20&room1': { url: 'https://stage3-vh67.onrender.com', name: 'Stage 3' },
+      '20&room2': { url: 'https://stage4-vh67.onrender.com', name: 'Stage 4' },
+      '30&room1': { url: 'https://stage5-vh67.onrender.com', name: 'Stage 5' },
+      '30&room2': { url: 'https://stage6-vh67.onrender.com', name: 'Stage 6' },
+      '50&room1': { url: 'https://stage1-vh67.onrender.com', name: 'Stage 1' },
+      '50&room2': { url: 'https://stage2-vh67.onrender.com', name: 'Stage 2' },
+      '100&room1': { url: 'https://stage3-vh67.onrender.com', name: 'Stage 3' },
+      '100&room2': { url: 'https://stage4-vh67.onrender.com', name: 'Stage 4' },
+      '200&room1': { url: 'https://stage5-vh67.onrender.com', name: 'Stage 5' },
+      '200&room2': { url: 'https://stage6-vh67.onrender.com', name: 'Stage 6' }
     };
 
     const roomKey = `${amount}&room${room}`;
