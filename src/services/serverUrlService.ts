@@ -72,7 +72,7 @@ export const checkBigServerAvailability = async (): Promise<boolean> => {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 3000);
     
-    const response = await fetch(`${import.meta.env.VITE_API_URL}/health`, {
+    const response = await fetch(`${import.meta.env.VITE_API_URL}/public-health`, {
       method: 'HEAD',
       signal: controller.signal
     });
