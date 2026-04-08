@@ -111,28 +111,9 @@ export const getLatestGameDataWithFallback = async (amount: number, room: number
       isFallback: false,
       warning: gameResponse.warning
     };
-    
-  } catch (error) {
-    console.warn('Failed to get latest game data, using fallback:', error);
-    
-    // Fallback data
-    const fallbackData: LatestGameData = {
-      gameId: 'G00000',
-      payout: 0,
-      players: '',
-      boards: '',
-      totalPlayers: 0,
-      stage: 'A',
-      timestamp: new Date().toISOString()
-    };
-
-    return {
-      data: fallbackData,
-      serverUrl: 'http://localhost:3001',
-      serverName: 'Stage 1',
-      isFallback: true,
-      warning: `Using fallback data: ${error instanceof Error ? error.message : 'Unknown error'}`
-    };
+  } catch (error: any) {
+    console.error('Failed to get latest game data:', error);
+    throw error instanceof Error ? error : new Error('Failed to get latest game data');
   }
 };
 

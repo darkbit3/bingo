@@ -80,72 +80,55 @@ export default function App() {
         setConnectionError(null);
         
         console.log(`Fetching game data for amount=${amount}, room=${room}...`);
-        const result = await getLatestGameDataWithFallback(amount, room);
-        
-        console.log('🔍 Full result data:', JSON.stringify(result.data, null, 2));
-        
-        // Update state with real data
-        setGameId(result.data.gameId);
-        setPayout(result.data.payout);
-        setPlayers(result.data.totalPlayers);
-        setPlayerIds(result.data.players);
-        setSelectedBoards(result.data.boards);
-        
-        // Parse boards from boards field (API only returns boards, not selectedBoard)
-        if (result.data.boards) {
-          console.log('🔍 Parsing boards field:', result.data.boards);
+      const [result] = await Promise.all([
+        getLatestGameDataWithFallback(amount, room),
+        new Promise(resolve => setTimeout(resolve, 1000))
+      ]);
+      
+      console.log('🔍 Full result data:', JSON.stringify(result.data, null, 2));
+
+      if (!result.data || result.data.gameId === 'G00000' || !result.data.boards) {
+        throw new Error('Stage server returned no valid game data');
+      }
+
+      // Update state with real data
+      setGameId(result.data.gameId);
+      setPayout(result.data.payout);
+      setPlayers(result.data.totalPlayers);
+      setPlayerIds(result.data.players);
+      setSelectedBoards(result.data.boards);
+
+      // Parse boards from boards field (API only returns boards, not selectedBoard)
+      const boardEntries = result.data.boards.split(',');
+      const boardNumbers: number[] = [];
+      
+      boardEntries.forEach((entry: string) => {
+        if (entry) {
+          const entryTrimmed = entry.trim();
+          const boardNumInt = parseInt(entryTrimmed);
           
-          const boardEntries = result.data.boards.split(',');
-          const boardNumbers: number[] = [];
-          
-          boardEntries.forEach((entry: string) => {
-            if (entry) {
-              const entryTrimmed = entry.trim();
-              const boardNumInt = parseInt(entryTrimmed);
-              
-              // Filter boards to only 1-400 range and numeric
-              if (!isNaN(boardNumInt) && boardNumInt > 0 && boardNumInt <= 400) {
-                boardNumbers.push(boardNumInt);
-                console.log(`📋 Board ${boardNumInt} found`);
-              } else {
-                console.log(`⚠️ Entry "${entryTrimmed}" is not a valid board number (1-400), skipping`);
-              }
-            }
-          });
-          
-          console.log('📊 Total valid boards found:', boardNumbers.length);
-          console.log('📊 Valid boards:', boardNumbers);
-          
-          setBetNumbers(boardNumbers);
-          console.log('✅ All marked boards:', boardNumbers);
+          // Filter boards to only 1-400 range and numeric
+          if (!isNaN(boardNumInt) && boardNumInt > 0 && boardNumInt <= 400) {
+            boardNumbers.push(boardNumInt);
+            console.log(`📋 Board ${boardNumInt} found`);
+          } else {
+            console.log(`⚠️ Entry "${entryTrimmed}" is not a valid board number (1-400), skipping`);
+          }
         }
-        
-        if (result.isFallback && !result.data.boards) {
-          const testBoards = '15,23,45,67,89,123,234';
-          const testPlayers = '+251909090901,+251909090902,+251909090903,+251909090904,+251909090905,+251909090906,+251909090907';
-          setSelectedBoards(testBoards);
-          setPlayerIds(testPlayers);
-          setPlayers(7);
-          setPayout(32);
-          
-          const boardNumbers = testBoards.split(',')
-            .map(board => parseInt(board.trim()))
-            .filter(board => !isNaN(board) && board > 0 && board <= 400);
-          setBetNumbers(boardNumbers);
-          console.log('Test marked boards:', boardNumbers);
-        }
-        
-        console.log('Game data updated:', result.data);
-        
-        if (result.isFallback) {
-          setConnectionError(result.warning || 'Using fallback data');
-        }
-        
+      });
+      
+      console.log('📊 Total valid boards found:', boardNumbers.length);
+      console.log('📊 Valid boards:', boardNumbers);
+      
+      setBetNumbers(boardNumbers);
+      console.log('✅ All marked boards:', boardNumbers);
+      
+      console.log('Game data updated:', result.data);
       } catch (error) {
         console.error('Failed to fetch game data:', error);
-        setConnectionError(error instanceof Error ? error.message : 'Unknown error');
+        setConnectionError(error instanceof Error ? error.message : 'Unable to load live game data');
         
-        setGameId('G00000');
+        setGameId('');
         setPayout(0);
         setPlayers(0);
         setPlayerIds('');
@@ -619,7 +602,7 @@ export default function App() {
 
   return (
     <SmartBetProvider>
-      <LoadingOverlay isLoading={isLoading} />
+      <LoadingOverlay isLoading={isLoading || gameDataLoading} />
       <Header 
         amount={amount}
         room={room}
@@ -755,7 +738,7 @@ export default function App() {
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-4">
-                The app will continue with fallback data
+                The app cannot display game data until the stage server returns valid live data.
               </p>
             </div>
           </div>
