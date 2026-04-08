@@ -5,9 +5,21 @@
       <meta charset="UTF-8" />
       <meta name="viewport" content="width=device-width, initial-scale=1.0" />
       <title>Mobile Bingo Game UI</title>
+      <script>
+        // Create share-modal element immediately to prevent external scripts from failing
+        if (!document.getElementById('share-modal')) {
+          var modal = document.createElement('div');
+          modal.id = 'share-modal';
+          modal.style.display = 'none';
+          modal.style.visibility = 'hidden';
+          document.head.appendChild(modal);
+        }
+      </script>
     </head>
 
     <body>
+      <!-- Fallback share-modal element in case JavaScript doesn't create it -->
+      <div id="share-modal-fallback" style="display:none;visibility:hidden;"></div>
       <div id="root"></div>
       <script type="module" src="/src/main.tsx"></script>
     </body>
