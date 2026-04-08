@@ -28,7 +28,7 @@ export const getServerUrl = async (amount: number, room: number): Promise<Server
   const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
 
   try {
-    const response = await fetch(`http://localhost:3000/server-url/${amount}/${room}`, {
+    const response = await fetch(`${process.env.REACT_APP_API_URL}/server-url/${amount}/${room}`, {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',

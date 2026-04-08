@@ -48,7 +48,7 @@ export default function SmartBetLoginPage({
           };
 
       // Simulate API call to Smart Bet
-      const response = await fetch(`http://localhost:5173${endpoint}`, {
+      const response = await fetch(`https://bingo-0gwl.onrender.com${endpoint}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -91,9 +91,7 @@ export default function SmartBetLoginPage({
     sessionStorage.setItem('bingo_return_url', window.location.href);
     
     // Open Smart Bet in new tab
-    const smartBetUrl = window.location.origin.includes('localhost') 
-      ? 'http://localhost:5173/login' 
-      : '/smart-bet/login';
+    const smartBetUrl = 'https://bingo-0gwl.onrender.com/login';
     
     window.open(smartBetUrl, '_blank');
   };
@@ -101,9 +99,7 @@ export default function SmartBetLoginPage({
   const handleExternalRegister = () => {
     sessionStorage.setItem('bingo_return_url', window.location.href);
     
-    const smartBetUrl = window.location.origin.includes('localhost') 
-      ? 'http://localhost:5173/register' 
-      : '/smart-bet/register';
+    const smartBetUrl = 'https://bingo-0gwl.onrender.com/register';
     
     window.open(smartBetUrl, '_blank');
   };

@@ -306,9 +306,7 @@ class SmartBetIntegrationService {
     sessionStorage.setItem('bingo_return_url', window.location.href);
     
     // Open Smart Bet in new tab or redirect
-    const smartBetUrl = window.location.origin.includes('localhost') 
-      ? 'http://localhost:5173/login' 
-      : '/smart-bet/login';
+    const smartBetUrl = 'https://bingo-0gwl.onrender.com/login';
     
     window.open(smartBetUrl, '_blank');
   }
@@ -321,9 +319,7 @@ class SmartBetIntegrationService {
     sessionStorage.setItem('bingo_return_url', window.location.href);
     
     // Open Smart Bet in new tab or redirect
-    const smartBetUrl = window.location.origin.includes('localhost') 
-      ? 'http://localhost:5173/register' 
-      : '/smart-bet/register';
+    const smartBetUrl = 'https://bingo-0gwl.onrender.com/register';
     
     window.open(smartBetUrl, '_blank');
   }
