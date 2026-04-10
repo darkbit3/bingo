@@ -112,6 +112,8 @@ class ServerDiscovery {
           break;
         case 'bigserver':
           endpoint = '/api/v1/health';
+          // Use production URL for BigServer instead of localhost
+          url = import.meta.env.VITE_API_URL || `http://localhost:${port}`;
           break;
         case 'dbmanager':
           endpoint = '/health';

@@ -53,7 +53,7 @@ export const initializePlayerDataListener = (): (() => void) => {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 5000); // 5 second timeout
       
-      const response = await fetch('http://localhost:3000/api/v1/player-info/current-player', {
+      const response = await fetch(`${import.meta.env.VITE_API_URL}/api/v1/player-info/current-player`, {
         signal: controller.signal,
         headers: {
           'Content-Type': 'application/json',
