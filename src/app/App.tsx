@@ -603,15 +603,14 @@ export default function App() {
   return (
     <SmartBetProvider>
       <LoadingOverlay isLoading={isLoading || gameDataLoading} />
-      {gamePhase === 'selection' && (
-        <Header 
-          amount={amount}
-          room={room}
-          onAmountChange={handleAmountChange}
-          onRoomChange={handleRoomChange}
-          onBetAttempt={handleBetAttempt}
-        />
-      )}
+      <Header 
+        amount={amount}
+        room={room}
+        onAmountChange={handleAmountChange}
+        onRoomChange={handleRoomChange}
+        onBetAttempt={handleBetAttempt}
+        gamePhase={gamePhase}
+      />
 
       {gamePhase === 'selection' && (
         <HomePage
