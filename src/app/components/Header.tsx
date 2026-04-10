@@ -208,55 +208,57 @@ export default function Header({
         <div className="absolute inset-0 bg-gradient-to-r from-amber-600/10 to-transparent opacity-50 pointer-events-none"></div>
         
         <div className="relative z-10 flex items-center justify-between h-full py-2 flex-wrap sm:flex-nowrap gap-2">
-          {/* Amount & Room Group - Only show on selection phase */}
-          {gamePhase !== 'playing' && (
-            <div className="flex items-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 flex-shrink-0">
-              {/* Amount Selector */}
-              <div className="group relative flex-shrink-0">
-                <div className="absolute inset-0 bg-amber-600/20 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                <div className="relative border border-amber-500/50 rounded-2xl px-2 py-1 bg-gray-900/50 backdrop-blur-sm">
-                  <div className="absolute -top-2 left-2 bg-gray-900 px-1 text-amber-400 text-[10px] font-semibold">
-                    Amount
-                  </div>
-                  <select
-                    value={amount}
-                    onChange={(e) => onAmountChange(Number(e.target.value))}
-                    className="bg-transparent text-amber-400 text-sm sm:text-base font-bold focus:outline-none cursor-pointer w-full min-w-[80px] pt-1 pb-0.5"
-                    disabled={connectionStatus === 'loading'}
-                  >
-                    {[10, 20, 30, 50, 100, 200].map((amt) => (
-                      <option key={amt} value={amt} className="bg-gray-900 text-amber-400">
-                        {amt} Birr
-                      </option>
-                    ))}
-                  </select>
+          {/* Amount & Room Group */}
+          <div className="flex items-center gap-1 sm:gap-2 md:gap-3 lg:gap-4 flex-shrink-0">
+            {/* Amount Selector */}
+            <div className="group relative flex-shrink-0">
+              <div className="absolute inset-0 bg-amber-600/20 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+              <div className="relative border border-amber-500/50 rounded-2xl px-2 py-1 bg-gray-900/50 backdrop-blur-sm">
+                <div className="absolute -top-2 left-2 bg-gray-900 px-1 text-amber-400 text-[10px] font-semibold">
+                  Amount
                 </div>
-              </div>
-
-              {/* Room Selector */}
-              <div className="group relative flex-shrink-0">
-                <div className="absolute inset-0 bg-blue-600/20 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
-                <div className="relative border border-blue-500/50 rounded-2xl px-2 py-1 bg-gray-900/50 backdrop-blur-sm">
-                  <div className="absolute -top-2 left-2 bg-gray-900 px-1 text-blue-400 text-[10px] font-semibold">
-                    Room
-                  </div>
-                  <select
-                    value={room}
-                    onChange={(e) => onRoomChange(Number(e.target.value))}
-                    className="bg-transparent text-blue-400 text-sm sm:text-base font-bold focus:outline-none cursor-pointer w-full min-w-[80px] pt-1 pb-0.5"
-                    disabled={connectionStatus === 'loading'}
-                  >
-                    <option value={1} className="bg-gray-900 text-blue-400">
-                      Room 1
+                <select
+                  value={amount}
+                  onChange={(e) => onAmountChange(Number(e.target.value))}
+                  className={`bg-transparent text-amber-400 text-sm sm:text-base font-bold focus:outline-none w-full min-w-[80px] pt-1 pb-0.5 ${
+                    gamePhase === 'playing' ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  }`}
+                  disabled={connectionStatus === 'loading' || gamePhase === 'playing'}
+                >
+                  {[10, 20, 30, 50, 100, 200].map((amt) => (
+                    <option key={amt} value={amt} className="bg-gray-900 text-amber-400">
+                      {amt} Birr
                     </option>
-                    <option value={2} className="bg-gray-900 text-blue-400">
-                      Room 2
-                    </option>
-                  </select>
-                </div>
+                  ))}
+                </select>
               </div>
             </div>
-          )}
+
+            {/* Room Selector */}
+            <div className="group relative flex-shrink-0">
+              <div className="absolute inset-0 bg-blue-600/20 rounded-2xl blur-sm opacity-0 group-hover:opacity-100 transition-all duration-300"></div>
+              <div className="relative border border-blue-500/50 rounded-2xl px-2 py-1 bg-gray-900/50 backdrop-blur-sm">
+                <div className="absolute -top-2 left-2 bg-gray-900 px-1 text-blue-400 text-[10px] font-semibold">
+                  Room
+                </div>
+                <select
+                  value={room}
+                  onChange={(e) => onRoomChange(Number(e.target.value))}
+                  className={`bg-transparent text-blue-400 text-sm sm:text-base font-bold focus:outline-none w-full min-w-[80px] pt-1 pb-0.5 ${
+                    gamePhase === 'playing' ? 'cursor-not-allowed opacity-50' : 'cursor-pointer'
+                  }`}
+                  disabled={connectionStatus === 'loading' || gamePhase === 'playing'}
+                >
+                  <option value={1} className="bg-gray-900 text-blue-400">
+                    Room 1
+                  </option>
+                  <option value={2} className="bg-gray-900 text-blue-400">
+                    Room 2
+                  </option>
+                </select>
+              </div>
+            </div>
+          </div>
 
           {/* Game Title */}
           <div className="flex-shrink-0">
