@@ -25,8 +25,8 @@ export interface LatestGameError {
   stage?: string;
 }
 
-// Get latest game data from stage server
-export const getLatestGameData = async (serverUrl: string, amount: number, room: number): Promise<LatestGameResponse> => {
+// Get latest game data from stage server with improved error handling
+export const getLatestGameData = async (serverUrl: string, amount: number, room: number, retryCount = 0): Promise<LatestGameResponse> => {
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
@@ -50,71 +50,136 @@ export const getLatestGameData = async (serverUrl: string, amount: number, room:
     const roomKey = `${amount}&room${room}`;
     const stage = stageMapping[roomKey] || 'A';
 
+    console.log(`🌐 Attempting to fetch game data from ${serverUrl} (attempt ${retryCount + 1})`);
+
     const response = await fetch(`${serverUrl}/api/v1/game/latest-data?stage=${stage.toLowerCase()}`, {
       signal: controller.signal,
       headers: {
         'Content-Type': 'application/json',
       },
+      // Add mode: 'cors' to handle CORS properly
+      mode: 'cors',
     });
 
     clearTimeout(timeoutId);
 
     if (!response.ok) {
-      const errorData: LatestGameError = await response.json().catch(() => ({ 
-        error: `HTTP ${response.status}: ${response.statusText}` 
+      let errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+
+      // Handle specific HTTP status codes
+      if (response.status === 502) {
+        errorMessage = 'Stage server is temporarily unavailable (502 Bad Gateway)';
+      } else if (response.status === 503) {
+        errorMessage = 'Stage server is under maintenance (503 Service Unavailable)';
+      } else if (response.status === 504) {
+        errorMessage = 'Stage server timeout (504 Gateway Timeout)';
+      } else if (response.status >= 500) {
+        errorMessage = `Stage server error (${response.status})`;
+      }
+
+      const errorData: LatestGameError = await response.json().catch(() => ({
+        error: errorMessage
       }));
-      throw new Error(errorData.error || `Failed to get latest game data: ${response.statusText}`);
+
+      throw new Error(errorData.error || errorMessage);
     }
 
     const result: LatestGameResponse = await response.json();
-    
+
     if (!result.success) {
-      throw new Error(result.data ? 'Invalid response format' : 'Stage server request failed');
+      throw new Error(result.data ? 'Invalid response format from stage server' : 'Stage server request failed');
     }
 
-    console.log(`Latest game data retrieved from ${serverUrl}:`, result.data);
+    console.log(`✅ Latest game data retrieved from ${serverUrl}:`, result.data);
     return result;
 
   } catch (error: any) {
     clearTimeout(timeoutId);
-    
+
+    // Enhanced error categorization
     if (error.name === 'AbortError') {
-      throw new Error('Request timeout - Stage server may not be available');
-    } else if (error.message?.includes('Failed to fetch')) {
-      throw new Error('Cannot connect to stage server - service may not be available');
+      throw new Error('Request timeout - Stage server may be slow or unavailable');
+    } else if (error.message?.includes('Failed to fetch') || error.message?.includes('NetworkError')) {
+      throw new Error('Cannot connect to stage server - network connectivity issue');
+    } else if (error.message?.includes('CORS') || error.message?.includes('Access-Control')) {
+      throw new Error('CORS policy blocked the request - stage server configuration issue');
+    } else if (error.message?.includes('502') || error.message?.includes('Bad Gateway')) {
+      throw new Error('Stage server is experiencing issues (502 Bad Gateway)');
+    } else if (error.message?.includes('503') || error.message?.includes('Service Unavailable')) {
+      throw new Error('Stage server is under maintenance (503 Service Unavailable)');
     } else {
       throw error;
     }
   }
 };
 
-// Get latest game data with fallback handling
-export const getLatestGameDataWithFallback = async (amount: number, room: number): Promise<{
+// Get latest game data with fallback handling and retry logic
+export const getLatestGameDataWithFallback = async (
+  amount: number,
+  room: number,
+  maxRetries = 2,
+  retryDelay = 1000
+): Promise<{
   data: LatestGameData;
   serverUrl: string;
   serverName: string;
   isFallback: boolean;
   warning?: string;
 }> => {
-  try {
-    // First get the server URL from BigServer
-    const { getServerUrlWithFallback } = await import('./serverUrlService');
-    const serverInfo = await getServerUrlWithFallback(amount, room);
-    
-    // Then get the latest game data from the stage server
-    const gameResponse = await getLatestGameData(serverInfo.serverUrl, amount, room);
-    
-    return {
-      data: gameResponse.data,
-      serverUrl: serverInfo.serverUrl,
-      serverName: serverInfo.serverName,
-      isFallback: false,
-      warning: gameResponse.warning
-    };
-  } catch (error: any) {
-    console.error('Failed to get latest game data:', error);
-    throw error instanceof Error ? error : new Error('Failed to get latest game data');
+  let lastError: Error | null = null;
+
+  for (let attempt = 0; attempt <= maxRetries; attempt++) {
+    try {
+      // First get the server URL from BigServer
+      const { getServerUrlWithFallback } = await import('./serverUrlService');
+      const serverInfo = await getServerUrlWithFallback(amount, room);
+
+      // Then get the latest game data from the stage server with retry
+      const gameResponse = await getLatestGameData(serverInfo.serverUrl, amount, room, attempt);
+
+      return {
+        data: gameResponse.data,
+        serverUrl: serverInfo.serverUrl,
+        serverName: serverInfo.serverName,
+        isFallback: false,
+        warning: gameResponse.warning
+      };
+
+    } catch (error: any) {
+      lastError = error instanceof Error ? error : new Error('Unknown error occurred');
+
+      console.warn(`❌ Attempt ${attempt + 1}/${maxRetries + 1} failed:`, lastError.message);
+
+      // If this is not the last attempt, wait before retrying
+      if (attempt < maxRetries) {
+        const delay = retryDelay * Math.pow(2, attempt); // Exponential backoff
+        console.log(`⏳ Retrying in ${delay}ms...`);
+        await new Promise(resolve => setTimeout(resolve, delay));
+      }
+    }
   }
+
+  // All retries failed, provide fallback data
+  console.error('🚨 All attempts to fetch game data failed, using fallback data');
+
+  // Create fallback data
+  const fallbackData: LatestGameData = {
+    gameId: 'FALLBACK-GAME',
+    payout: 0,
+    players: '',
+    boards: '',
+    totalPlayers: 0,
+    stage: 'FALLBACK',
+    timestamp: new Date().toISOString()
+  };
+
+  return {
+    data: fallbackData,
+    serverUrl: 'fallback',
+    serverName: 'Fallback Server',
+    isFallback: true,
+    warning: `Server unavailable: ${lastError?.message || 'Unknown error'}. Using offline mode.`
+  };
 };
 
 // Parse selected board for display

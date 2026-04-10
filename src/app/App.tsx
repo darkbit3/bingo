@@ -87,9 +87,28 @@ export default function App() {
       
       console.log('🔍 Full result data:', JSON.stringify(result.data, null, 2));
 
+      // Handle fallback data
+      if (result.isFallback) {
+        console.warn('⚠️ Using fallback data:', result.warning);
+        setConnectionError(result.warning || 'Using offline mode - servers temporarily unavailable');
+
+        // Set minimal fallback data
+        setGameId('OFFLINE-MODE');
+        setPayout(0);
+        setPlayers(0);
+        setPlayerIds('');
+        setSelectedBoards('');
+        setBetNumbers([]);
+        setUserBets([]);
+        return;
+      }
+
       if (!result.data || result.data.gameId === 'G00000' || !result.data.boards) {
         throw new Error('Stage server returned no valid game data');
       }
+
+      // Clear any previous connection errors on successful fetch
+      setConnectionError(null);
 
       // Update state with real data
       setGameId(result.data.gameId);
@@ -126,9 +145,26 @@ export default function App() {
       console.log('Game data updated:', result.data);
       } catch (error) {
         console.error('Failed to fetch game data:', error);
-        setConnectionError(error instanceof Error ? error.message : 'Unable to load live game data');
-        
-        setGameId('');
+
+        // Provide user-friendly error messages
+        let errorMessage = 'Unable to load live game data';
+        if (error instanceof Error) {
+          if (error.message.includes('CORS')) {
+            errorMessage = 'Server configuration issue - please try again later';
+          } else if (error.message.includes('502') || error.message.includes('Bad Gateway')) {
+            errorMessage = 'Game servers are temporarily unavailable - using offline mode';
+          } else if (error.message.includes('timeout')) {
+            errorMessage = 'Connection timeout - servers may be busy';
+          } else if (error.message.includes('Cannot connect')) {
+            errorMessage = 'Network connectivity issue - check your connection';
+          } else {
+            errorMessage = error.message;
+          }
+        }
+
+        setConnectionError(errorMessage);
+
+        setGameId('OFFLINE-MODE');
         setPayout(0);
         setPlayers(0);
         setPlayerIds('');
@@ -150,42 +186,56 @@ export default function App() {
         try {
           console.log('🔄 Auto-refreshing board markings...');
           const result = await getLatestGameDataWithFallback(amount, room);
-          
+
           console.log('🔍 Full result data:', JSON.stringify(result.data, null, 2));
-        
+
+          // Handle fallback data during auto-refresh
+          if (result.isFallback) {
+            console.warn('⚠️ Auto-refresh using fallback data:', result.warning);
+            // Don't update UI data when using fallback, just log the warning
+            return;
+          }
+
         // Parse boards from boards field (API only returns boards, not selectedBoard)
         if (result.data.boards) {
-          console.log('� Auto-refreshing boards field:', result.data.boards);
-          
+          console.log('📊 Auto-refreshing boards field:', result.data.boards);
+
           const boardEntries = result.data.boards.split(',');
           const boardNumbers: number[] = [];
-          
+
           boardEntries.forEach((entry: string) => {
             if (entry) {
               const entryTrimmed = entry.trim();
               const boardNumInt = parseInt(entryTrimmed);
-              
+
               // Filter boards to only 1-400 range and numeric
               if (!isNaN(boardNumInt) && boardNumInt > 0 && boardNumInt <= 400) {
                 boardNumbers.push(boardNumInt);
               }
             }
           });
-          
+
           // Update state with new board data
           setBetNumbers(boardNumbers);
-          
+
           // Update other game data
           setGameId(result.data.gameId);
           setPayout(result.data.payout);
           setPlayers(result.data.totalPlayers);
           setPlayerIds(result.data.players);
           setSelectedBoards(result.data.boards);
-          
+
+          // Clear connection error on successful refresh
+          setConnectionError(null);
+
           console.log('✅ Board markings updated in real-time:', boardNumbers);
         }
         } catch (error) {
           console.error('❌ Auto-refresh failed:', error);
+
+          // Don't show error messages for auto-refresh failures to avoid spam
+          // Just log them and continue with existing data
+          // The initial load error handling will show user-facing messages
         }
       }, 5000); // Refresh every 5 seconds
 
