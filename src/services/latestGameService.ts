@@ -87,6 +87,25 @@ export const getLatestGameData = async (serverUrl: string, amount: number, room:
     const result: LatestGameResponse = await response.json();
 
     if (!result.success) {
+      // Handle case where DB Manager is unavailable - return fallback data
+      if (result.source === 'db_manager_unavailable') {
+        console.log(`⚠️ DB Manager unavailable for ${serverUrl}, using fallback data`);
+        return {
+          success: true,
+          data: {
+            gameId: 'FALLBACK-GAME',
+            payout: 0,
+            players: '',
+            boards: '',
+            totalPlayers: 0,
+            stage: 'FALLBACK',
+            timestamp: new Date().toISOString()
+          },
+          source: 'fallback',
+          stage: 'fallback',
+          timestamp: new Date().toISOString()
+        };
+      }
       throw new Error(result.data ? 'Invalid response format from stage server' : 'Stage server request failed');
     }
 
