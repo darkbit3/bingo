@@ -105,16 +105,16 @@ export const getServerUrlWithFallback = async (amount: number, room: number): Pr
     // Fallback mapping based on the same constants as BigServer
     const fallbackMapping: { [key: string]: { url: string; name: string } } = {
       '10&room1': { url: 'https://stage1-vh67.onrender.com', name: 'Stage 1' },
-      '10&room2': { url: 'https://stage2-vh67.onrender.com', name: 'Stage 2' },
-      '20&room1': { url: 'https://stage3-vh67.onrender.com', name: 'Stage 3' },
-      '20&room2': { url: 'https://stage4-vh67.onrender.com', name: 'Stage 4' },
-      '30&room1': { url: 'https://stage5-vh67.onrender.com', name: 'Stage 5' },
-      '30&room2': { url: 'https://stage6-vh67.onrender.com', name: 'Stage 6' },
-      '50&room1': { url: 'https://stage1-vh67.onrender.com', name: 'Stage 1' },
-      '50&room2': { url: 'https://stage2-vh67.onrender.com', name: 'Stage 2' },
-      '100&room1': { url: 'https://stage3-vh67.onrender.com', name: 'Stage 3' },
-      '100&room2': { url: 'https://stage4-vh67.onrender.com', name: 'Stage 4' },
-      '200&room1': { url: 'https://stage5-vh67.onrender.com', name: 'Stage 5' },
+      '10&room2': { url: 'https://stage1-vh67.onrender.com', name: 'Stage 1' },
+      '20&room1': { url: 'https://stage2-vh67.onrender.com', name: 'Stage 2' },
+      '20&room2': { url: 'https://stage2-vh67.onrender.com', name: 'Stage 2' },
+      '30&room1': { url: 'https://stage3-vh67.onrender.com', name: 'Stage 3' },
+      '30&room2': { url: 'https://stage3-vh67.onrender.com', name: 'Stage 3' },
+      '50&room1': { url: 'https://stage4-vh67.onrender.com', name: 'Stage 4' },
+      '50&room2': { url: 'https://stage4-vh67.onrender.com', name: 'Stage 4' },
+      '100&room1': { url: 'https://stage5-vh67.onrender.com', name: 'Stage 5' },
+      '100&room2': { url: 'https://stage5-vh67.onrender.com', name: 'Stage 5' },
+      '200&room1': { url: 'https://stage6-vh67.onrender.com', name: 'Stage 6' },
       '200&room2': { url: 'https://stage6-vh67.onrender.com', name: 'Stage 6' }
     };
 
