@@ -53,6 +53,7 @@ export default function App() {
   const [gameId, setGameId] = useState('G00000');
   const [gameDataLoading, setGameDataLoading] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
+  const [retryTrigger, setRetryTrigger] = useState(0);
   const [playerIds, setPlayerIds] = useState<string>('');
   const [selectedBoards, setSelectedBoards] = useState<string>('');
   
@@ -172,7 +173,10 @@ export default function App() {
           }
         }
 
-        setConnectionError(errorMessage);
+        setConnectionError(
+          errorMessage ||
+          'Stage server returned no valid game data. Please try again or change the amount if no player amount appears.'
+        );
 
         setGameId('OFFLINE-MODE');
         setPayout(0);
@@ -187,7 +191,7 @@ export default function App() {
     };
 
     fetchGameData();
-  }, [amount, room]);
+  }, [amount, room, retryTrigger]);
 
   // Real-time board updates - refresh every 5 seconds
   useEffect(() => {
@@ -634,6 +638,16 @@ export default function App() {
     setCountdown(60);
   };
 
+  const handleRetryLoad = () => {
+    setConnectionError(null);
+    setRetryTrigger(prev => prev + 1);
+  };
+
+  const handleChangeAmount = () => {
+    setConnectionError(null);
+    setGamePhase('selection');
+  };
+
   const handleCancelBet = () => {
     if (selectedNumber && userBets.includes(selectedNumber)) {
       setBalance(balance + amount);
@@ -777,20 +791,20 @@ export default function App() {
               <p className="text-gray-300 mb-6">{connectionError}</p>
               <div className="space-y-3">
                 <button
-                  onClick={() => window.location.reload()}
+                  onClick={handleRetryLoad}
                   className="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-purple-700 transition-all duration-200 shadow-lg hover:shadow-blue-500/25"
                 >
-                  Refresh Page
+                  Try Again
                 </button>
                 <button
-                  onClick={() => setConnectionError(null)}
+                  onClick={handleChangeAmount}
                   className="w-full bg-gray-700 text-gray-300 px-6 py-3 rounded-xl font-semibold hover:bg-gray-600 transition-all duration-200"
                 >
-                  Continue Anyway
+                  Change Amount
                 </button>
               </div>
               <p className="text-xs text-gray-400 mt-4">
-                The app cannot display game data until the stage server returns valid live data.
+                If the stage server is unavailable or no player amount appears, try again or select a different amount.
               </p>
             </div>
           </div>
