@@ -19,6 +19,25 @@ export interface LatestGameResponse {
   timestamp: string;
 }
 
+export const getStageLetter = (amount: number, room: number): string => {
+  const stageMapping: { [key: string]: string } = {
+    '10&room1': 'A',
+    '10&room2': 'B',
+    '20&room1': 'C',
+    '20&room2': 'D',
+    '30&room1': 'E',
+    '30&room2': 'F',
+    '50&room1': 'G',
+    '50&room2': 'H',
+    '100&room1': 'I',
+    '100&room2': 'J',
+    '200&room1': 'K',
+    '200&room2': 'L'
+  };
+
+  return stageMapping[`${amount}&room${room}`] || 'A';
+}
+
 export interface LatestGameError {
   error: string;
   details?: string;
@@ -31,24 +50,7 @@ export const getLatestGameData = async (serverUrl: string, amount: number, room:
   const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 second timeout
 
   try {
-    // Determine stage based on amount and room mapping
-    const stageMapping: { [key: string]: string } = {
-      '10&room1': 'A',
-      '10&room2': 'B',
-      '20&room1': 'C',
-      '20&room2': 'D',
-      '30&room1': 'E',
-      '30&room2': 'F',
-      '50&room1': 'G',
-      '50&room2': 'H',
-      '100&room1': 'I',
-      '100&room2': 'J',
-      '200&room1': 'K',
-      '200&room2': 'L'
-    };
-
-    const roomKey = `${amount}&room${room}`;
-    const stage = stageMapping[roomKey] || 'A';
+    const stage = getStageLetter(amount, room);
 
     console.log(`🌐 Attempting to fetch game data from ${serverUrl} (attempt ${retryCount + 1})`);
 

@@ -10,7 +10,7 @@ import WinnerDisplay from './components/WinnerDisplay';
 import History from './components/History';
 import { realTimeSync } from '../services/RealTimeSync';
 import { receivePlayerData, initializePlayerDataListener } from '../services/playerDataReceiver';
-import { getLatestGameDataWithFallback } from '../services/latestGameService';
+import { getLatestGameDataWithFallback, getStageLetter } from '../services/latestGameService';
 import { SmartBetProvider } from '../contexts/SmartBetContext';
 
 type GamePhase = 'selection' | 'playing' | 'winner';
@@ -483,16 +483,6 @@ export default function App() {
           throw new Error('Could not connect to stage server');
         }
 
-        const getStageLetter = () => {
-          if (amount === 10) return room === 1 ? 'A' : 'B';
-          if (amount === 20) return room === 1 ? 'E' : 'F';
-          if (amount === 30) return room === 1 ? 'G' : 'H';
-          if (amount === 50) return room === 1 ? 'I' : 'J';
-          if (amount === 100) return room === 1 ? 'K' : 'L';
-          if (amount === 200) return room === 1 ? 'K' : 'L';
-          return 'A';
-        };
-
         const betResponse = await fetch(`${stageServerUrl}/api/v1/game/place-bet`, {
           method: 'POST',
           headers: {
@@ -502,7 +492,7 @@ export default function App() {
             boardNumber: selectedNumber,
             playerId: playerId,
             amount: amount,
-            stage: getStageLetter()
+            stage: getStageLetter(amount, room)
           })
         });
 
