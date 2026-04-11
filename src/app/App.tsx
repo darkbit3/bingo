@@ -15,6 +15,14 @@ import { SmartBetProvider } from '../contexts/SmartBetContext';
 
 type GamePhase = 'selection' | 'playing' | 'winner';
 
+const normalizeGameData = (data: any) => {
+  return {
+    ...data,
+    boards: Array.isArray(data.boards) ? data.boards.join(',') : typeof data.boards === 'string' ? data.boards : '',
+    players: Array.isArray(data.players) ? data.players.join(',') : typeof data.players === 'string' ? data.players : ''
+  };
+};
+
 export default function App() {
   const [darkMode, setDarkMode] = useState(false);
   const [soundOn, setSoundOn] = useState(true);
@@ -111,14 +119,16 @@ export default function App() {
       setConnectionError(null);
 
       // Update state with real data
-      setGameId(result.data.gameId);
-      setPayout(result.data.payout);
-      setPlayers(result.data.totalPlayers);
-      setPlayerIds(result.data.players);
-      setSelectedBoards(result.data.boards);
+      const normalizedData = normalizeGameData(result.data);
+
+      setGameId(normalizedData.gameId);
+      setPayout(normalizedData.payout);
+      setPlayers(normalizedData.totalPlayers);
+      setPlayerIds(normalizedData.players);
+      setSelectedBoards(normalizedData.boards);
 
       // Parse boards from boards field (API only returns boards, not selectedBoard)
-      const boardEntries = result.data.boards.split(',');
+      const boardEntries = normalizedData.boards ? normalizedData.boards.split(',') : [];
       const boardNumbers: number[] = [];
       
       boardEntries.forEach((entry: string) => {
@@ -197,10 +207,11 @@ export default function App() {
           }
 
         // Parse boards from boards field (API only returns boards, not selectedBoard)
-        if (result.data.boards) {
-          console.log('📊 Auto-refreshing boards field:', result.data.boards);
+        const normalizedData = normalizeGameData(result.data);
+        if (normalizedData.boards) {
+          console.log('📊 Auto-refreshing boards field:', normalizedData.boards);
 
-          const boardEntries = result.data.boards.split(',');
+          const boardEntries = normalizedData.boards.split(',');
           const boardNumbers: number[] = [];
 
           boardEntries.forEach((entry: string) => {
@@ -219,11 +230,11 @@ export default function App() {
           setBetNumbers(boardNumbers);
 
           // Update other game data
-          setGameId(result.data.gameId);
-          setPayout(result.data.payout);
-          setPlayers(result.data.totalPlayers);
-          setPlayerIds(result.data.players);
-          setSelectedBoards(result.data.boards);
+          setGameId(normalizedData.gameId);
+          setPayout(normalizedData.payout);
+          setPlayers(normalizedData.totalPlayers);
+          setPlayerIds(normalizedData.players);
+          setSelectedBoards(normalizedData.boards);
 
           // Clear connection error on successful refresh
           setConnectionError(null);

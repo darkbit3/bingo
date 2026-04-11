@@ -204,14 +204,14 @@ export const getLatestGameDataWithFallback = async (
 };
 
 // Parse selected board for display
-export const parseSelectedBoardForDisplay = (players: string, boards: string): Array<{
+export const parseSelectedBoardForDisplay = (players: string | string[], boards: string | string[]): Array<{
   playerId: string;
   board: string;
 }> => {
   if (!players || !boards) return [];
   
-  const playerIds = players.split(',');
-  const boardNumbers = boards.split(',');
+  const playerIds = Array.isArray(players) ? players : players.split(',');
+  const boardNumbers = Array.isArray(boards) ? boards : boards.split(',');
   
   return playerIds.map((playerId, index) => ({
     playerId: playerId.trim(),
