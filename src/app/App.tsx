@@ -645,6 +645,10 @@ export default function App() {
 
   const handleChangeAmount = () => {
     setConnectionError(null);
+    setAmount(10);
+    setRoom(1);
+    realTimeSync.setRoomAndAmount(1, 10);
+    setCountdown(60);
     setGamePhase('selection');
   };
 
