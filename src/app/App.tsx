@@ -11,6 +11,7 @@ import History from './components/History';
 import { realTimeSync } from '../services/RealTimeSync';
 import { receivePlayerData, initializePlayerDataListener } from '../services/playerDataReceiver';
 import { getLatestGameDataWithFallback, getStageLetter } from '../services/latestGameService';
+import { getRoomCountdownWithFallback } from '../services/countdownService';
 import { SmartBetProvider } from '../contexts/SmartBetContext';
 
 type GamePhase = 'selection' | 'playing' | 'winner';
@@ -42,6 +43,8 @@ export default function App() {
   const [isPlacingBet, setIsPlacingBet] = useState(false);
   const [betAccepted, setBetAccepted] = useState(false);
   const [countdown, setCountdown] = useState(60);
+  const [remoteCountdown, setRemoteCountdown] = useState<number | null>(null);
+  const [remoteCountdownActive, setRemoteCountdownActive] = useState(false);
   const [gameCountdown, setGameCountdown] = useState(3);
   
   // History modal state
@@ -193,6 +196,48 @@ export default function App() {
     fetchGameData();
   }, [amount, room, retryTrigger]);
 
+  // Fetch countdown from stage server when amount supports per-room countdown
+  useEffect(() => {
+    const supportedAmounts = [10, 20, 30, 50, 100, 200];
+    if (supportedAmounts.includes(amount) && gamePhase === 'selection') {
+      const fetchCountdown = async () => {
+        try {
+          const result = await getRoomCountdownWithFallback(amount, room, countdown);
+          setRemoteCountdown(result.countdown);
+          setRemoteCountdownActive(result.active);
+          if (result.isFallback) {
+            console.warn(`Using local countdown for amount ${amount}, room ${room} due to stage server issue:`, result.error);
+          }
+        } catch (error) {
+          console.error('Failed to fetch countdown:', error);
+          setRemoteCountdown(null);
+          setRemoteCountdownActive(false);
+        }
+      };
+
+      // Fetch immediately
+      fetchCountdown();
+
+      // Fetch every 2 seconds
+      const interval = setInterval(fetchCountdown, 2000);
+
+      return () => clearInterval(interval);
+    } else {
+      // Reset remote countdown when not supported
+      setRemoteCountdown(null);
+      setRemoteCountdownActive(false);
+    }
+  }, [amount, room, gamePhase, countdown]);
+
+  // Handle game phase transition when remote countdown reaches 0
+  useEffect(() => {
+    const supportedAmounts = [10, 20, 30, 50, 100, 200];
+    if (supportedAmounts.includes(amount) && remoteCountdown === 0 && gamePhase === 'selection') {
+      setGamePhase('playing');
+      setGameCountdown(3);
+    }
+  }, [remoteCountdown, gamePhase, amount]);
+
   // Real-time board updates - refresh every 5 seconds
   useEffect(() => {
     if (gamePhase === 'selection') {
@@ -304,10 +349,17 @@ export default function App() {
   }, [gamePhase, calledNumbers, currentCall, playerBoards, isSyncing]);
 
   useEffect(() => {
+    const supportedAmounts = [10, 20, 30, 50, 100, 200];
     let interval: NodeJS.Timeout | null = null;
     
-    if (gamePhase === 'selection' && countdown > 0) {
-      interval = setInterval(() => {
+    // For supported amounts, use remote countdown if available
+    if (supportedAmounts.includes(amount) && remoteCountdown !== null && gamePhase === 'selection') {
+      // Don't decrement locally, remote countdown is managed by stage server
+      return;
+    }
+
+    // For other amounts or when remote countdown is not available, use local countdown
+    if (gamePhase === 'selection' && countdown > 0 && (!supportedAmounts.includes(amount) || remoteCountdown === null)) {
         setCountdown(prev => {
           const newCountdown = prev - 1;
           if (newCountdown <= 0) {
@@ -319,11 +371,11 @@ export default function App() {
         });
       }, 1000);
     }
-    
+
     return () => {
       if (interval) clearInterval(interval);
     };
-  }, [gamePhase]);
+  }, [gamePhase, countdown, amount, remoteCountdown]);
 
   useEffect(() => {
     return () => {
@@ -370,7 +422,7 @@ export default function App() {
     };
   }, [playerId]);
 
-  const shouldBlink = countdown <= 5 && countdown > 0 && gamePhase === 'selection';
+  const shouldBlink = displayCountdown <= 5 && displayCountdown > 0 && gamePhase === 'selection';
 
   const generateBingoBoard = () => {
     const board: number[][] = [];
@@ -669,6 +721,9 @@ export default function App() {
     // This will be handled by the BettingGuard component
   };
 
+  // Determine which countdown to display
+  const displayCountdown = amount === 10 && remoteCountdown !== null ? remoteCountdown : countdown;
+
   return (
     <SmartBetProvider>
       <LoadingOverlay isLoading={isLoading || gameDataLoading} />
@@ -693,7 +748,7 @@ export default function App() {
           players={players}
           payout={payout}
           gameId={gameId}
-          countdown={countdown}
+          countdown={displayCountdown}
           gamePhase={gamePhase}
           showBetPopup={showBetPopup}
           betNumbers={betNumbers}
@@ -734,7 +789,7 @@ export default function App() {
           players={players}
           payout={payout}
           gameId={gameId}
-          countdown={countdown}
+          countdown={displayCountdown}
           shouldBlink={shouldBlink}
         />
       )}
