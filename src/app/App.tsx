@@ -42,7 +42,11 @@ export default function App() {
   const [userBets, setUserBets] = useState<number[]>([]);
   const [isPlacingBet, setIsPlacingBet] = useState(false);
   const [betAccepted, setBetAccepted] = useState(false);
-  const [countdown, setCountdown] = useState(60);
+  const [countdown, setCountdown] = useState(() => {
+    // Load countdown from localStorage or default to 60
+    const saved = localStorage.getItem('bingo-countdown');
+    return saved ? parseInt(saved) : 60;
+  });
   const [remoteCountdown, setRemoteCountdown] = useState<number | null>(null);
   const [remoteCountdownActive, setRemoteCountdownActive] = useState(false);
   const [gameCountdown, setGameCountdown] = useState(3);
@@ -80,6 +84,11 @@ export default function App() {
       document.documentElement.classList.remove('dark');
     }
   }, [darkMode]);
+
+  // Save countdown to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem('bingo-countdown', countdown.toString());
+  }, [countdown]);
 
   useEffect(() => {
     realTimeSync.setRoomAndAmount(room, amount);
@@ -205,8 +214,16 @@ export default function App() {
           const result = await getRoomCountdownWithFallback(amount, room, countdown);
           setRemoteCountdown(result.countdown);
           setRemoteCountdownActive(result.active);
+          
+          // Sync local countdown with remote when available
+          if (!result.isFallback && result.countdown !== countdown) {
+            setCountdown(result.countdown);
+          }
+          
           if (result.isFallback) {
             console.warn(`Using local countdown for amount ${amount}, room ${room} due to stage server issue:`, result.error);
+          } else {
+            console.log(`✅ Real-time countdown: ${result.countdown}s (Room ${room}, Amount ${amount})`);
           }
         } catch (error) {
           console.error('Failed to fetch countdown:', error);
@@ -215,11 +232,11 @@ export default function App() {
         }
       };
 
-      // Fetch immediately
+      // Fetch immediately when amount/room changes
       fetchCountdown();
 
-      // Fetch every 2 seconds
-      const interval = setInterval(fetchCountdown, 2000);
+      // Fetch every 1 second for real-time updates
+      const interval = setInterval(fetchCountdown, 1000);
 
       return () => clearInterval(interval);
     } else {
@@ -681,13 +698,13 @@ export default function App() {
   const handleRoomChange = (newRoom: number) => {
     setRoom(newRoom);
     realTimeSync.setRoomAndAmount(newRoom, amount);
-    setCountdown(60);
+    // Don't reset countdown - let it fetch from backend for new room
   };
 
   const handleAmountChange = (newAmount: number) => {
     setAmount(newAmount);
     realTimeSync.setRoomAndAmount(room, newAmount);
-    setCountdown(60);
+    // Don't reset countdown - let it fetch from backend for new amount
   };
 
   const handleRetryLoad = () => {
@@ -700,7 +717,7 @@ export default function App() {
     setAmount(10);
     setRoom(1);
     realTimeSync.setRoomAndAmount(1, 10);
-    setCountdown(60);
+    // Don't reset countdown - let it fetch from backend for default room/amount
     setGamePhase('selection');
   };
 
