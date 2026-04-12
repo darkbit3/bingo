@@ -209,6 +209,11 @@ export default function App() {
   useEffect(() => {
     const supportedAmounts = [10, 20, 30, 50, 100, 200];
     if (supportedAmounts.includes(amount) && gamePhase === 'selection') {
+      // Initialize remote countdown with current local value to prevent display flicker
+      if (remoteCountdown === null) {
+        setRemoteCountdown(countdown);
+      }
+      
       const fetchCountdown = async () => {
         try {
           const result = await getRoomCountdownWithFallback(amount, room, countdown);
@@ -739,7 +744,8 @@ export default function App() {
   };
 
   // Determine which countdown to display
-  const displayCountdown = amount === 10 && remoteCountdown !== null ? remoteCountdown : countdown;
+  const supportedAmounts = [10, 20, 30, 50, 100, 200];
+  const displayCountdown = supportedAmounts.includes(amount) ? (remoteCountdown ?? countdown) : countdown;
 
   return (
     <SmartBetProvider>
