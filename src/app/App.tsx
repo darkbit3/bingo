@@ -382,6 +382,7 @@ export default function App() {
 
     // For other amounts or when remote countdown is not available, use local countdown
     if (gamePhase === 'selection' && countdown > 0 && (!supportedAmounts.includes(amount) || remoteCountdown === null)) {
+      interval = setInterval(() => {
         setCountdown(prev => {
           const newCountdown = prev - 1;
           if (newCountdown <= 0) {
@@ -443,6 +444,10 @@ export default function App() {
       console.log('🔄 Real-time balance monitoring stopped');
     };
   }, [playerId]);
+
+  // Determine which countdown to display
+  const supportedAmountsForDisplay = [10, 20, 30, 50, 100, 200];
+  const displayCountdown = supportedAmountsForDisplay.includes(amount) ? (remoteCountdown ?? countdown) : countdown;
 
   const shouldBlink = displayCountdown <= 5 && displayCountdown > 0 && gamePhase === 'selection';
 
@@ -742,10 +747,6 @@ export default function App() {
     console.log('Bet attempt:', betAmount);
     // This will be handled by the BettingGuard component
   };
-
-  // Determine which countdown to display
-  const supportedAmounts = [10, 20, 30, 50, 100, 200];
-  const displayCountdown = supportedAmounts.includes(amount) ? (remoteCountdown ?? countdown) : countdown;
 
   return (
     <SmartBetProvider>
